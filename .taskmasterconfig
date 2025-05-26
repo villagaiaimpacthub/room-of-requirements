@@ -5,7 +5,7 @@
     "version": "1.0.0"
   },
   "ai": {
-    "model": "claude-4-sonnet",
+    "model": "anthropic/claude-3-5-sonnet-20241022",
     "provider": "openrouter",
     "temperature": 0.2,
     "maxTokens": 8192,
@@ -36,19 +36,19 @@
   "models": {
     "main": {
       "provider": "openrouter",
-      "modelId": "claude-4-sonnet",
+      "modelId": "anthropic/claude-3-5-sonnet-20241022",
       "maxTokens": 8192,
       "temperature": 0.2
     },
     "research": {
       "provider": "openrouter",
-      "modelId": "gemini-2.5-pro",
+      "modelId": "google/gemini-2.0-flash-exp",
       "maxTokens": 4096,
       "temperature": 0.1
     },
     "quick": {
       "provider": "openrouter",
-      "modelId": "gemini-2.5-flash-preview-04-17",
+      "modelId": "google/gemini-2.0-flash-exp",
       "maxTokens": 4096,
       "temperature": 0.3
     }
