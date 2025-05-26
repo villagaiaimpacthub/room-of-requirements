@@ -2,12 +2,14 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import multer from 'multer';
 import { join } from 'path';
-import { readFileSync } from 'fs';
+import { readFileSync, mkdirSync } from 'fs';
 import * as dotenv from 'dotenv';
 import { createServer } from 'http';
 import WebSocketService from './services/websocket';
 import OpenRouterService from './services/openrouter';
+import CompostingService from './services/compostingService';
 
 // Load environment variables
 dotenv.config();
@@ -45,6 +47,57 @@ try {
 } catch (error) {
   console.error('❌ Failed to initialize OpenRouter service:', error);
 }
+
+// Initialize Composting service
+const compostingService = new CompostingService();
+
+// Configure multer for file uploads
+const uploadDir = join(__dirname, '../uploads');
+try {
+  mkdirSync(uploadDir, { recursive: true });
+} catch (error) {
+  console.log('Upload directory already exists or created');
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + '-' + file.originalname);
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB limit
+    files: 10 // Maximum 10 files
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedMimes = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain',
+      'text/markdown',
+      'text/x-markdown',
+      'image/jpeg',
+      'image/png',
+      'image/gif'
+    ];
+    
+    // Check file extension for markdown files (browsers sometimes send wrong MIME type)
+    const allowedExtensions = ['.pdf', '.docx', '.txt', '.md', '.markdown', '.jpg', '.jpeg', '.png', '.gif'];
+    const fileExtension = file.originalname.toLowerCase().substring(file.originalname.lastIndexOf('.'));
+    
+    if (allowedMimes.includes(file.mimetype) || allowedExtensions.includes(fileExtension)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`Unsupported file type: ${file.mimetype} (${file.originalname})`));
+    }
+  }
+});
 
 // Health check endpoint
 app.get('/health', (_req, res) => {
@@ -151,6 +204,212 @@ app.get('/api/v1/tasks', (_req, res) => {
     res.status(500).json({ 
       error: 'Failed to load tasks',
       message: 'Tasks file not found. Please generate tasks using TaskMaster AI first.'
+    });
+  }
+});
+
+// Composting API endpoints
+
+// Create new composting session
+app.post('/api/v1/compost/session', (req, res) => {
+  try {
+    const { projectName } = req.body;
+    const session = compostingService.createSession(projectName);
+    
+    res.json({
+      success: true,
+      session: {
+        id: session.id,
+        projectName: session.projectName,
+        status: session.status,
+        progress: session.progress
+      }
+    });
+  } catch (error) {
+    console.error('Error creating composting session:', error);
+    res.status(500).json({ 
+      error: 'Failed to create composting session',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Get composting session
+app.get('/api/v1/compost/session/:sessionId', (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const session = compostingService.getSession(sessionId);
+    
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    
+    res.json({ success: true, session });
+  } catch (error) {
+    console.error('Error getting composting session:', error);
+    res.status(500).json({ 
+      error: 'Failed to get composting session',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Upload files for composting
+app.post('/api/v1/compost/session/:sessionId/upload', upload.array('files', 10), async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const files = req.files as Express.Multer.File[];
+    
+    if (!files || files.length === 0) {
+      return res.status(400).json({ error: 'No files uploaded' });
+    }
+    
+    const session = compostingService.getSession(sessionId);
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    
+    // Set up WebSocket progress updates
+    const progressCallback = (progress: any) => {
+      webSocketService.broadcastToSession(sessionId, 'composting-progress', progress);
+    };
+    
+    // Process files
+    const filePaths = files.map(file => file.path);
+    const fileNames = files.map(file => file.originalname);
+    const mimeTypes = files.map(file => file.mimetype);
+    
+    const processedFiles = await compostingService.processFiles(
+      sessionId,
+      filePaths,
+      fileNames,
+      mimeTypes,
+      progressCallback
+    );
+    
+    res.json({
+      success: true,
+      message: `Successfully processed ${processedFiles.length} files`,
+      files: processedFiles.map(file => ({
+        id: file.id,
+        originalName: file.originalName,
+        size: file.size,
+        wordCount: file.metadata.wordCount
+      }))
+    });
+    
+  } catch (error) {
+    console.error('Error uploading files:', error);
+    res.status(500).json({ 
+      error: 'Failed to upload files',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Update project description
+app.post('/api/v1/compost/session/:sessionId/description', (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const { description } = req.body;
+    
+    if (!description) {
+      return res.status(400).json({ error: 'Description is required' });
+    }
+    
+    const session = compostingService.updateProjectDescription(sessionId, description);
+    
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    
+    res.json({ success: true, session });
+  } catch (error) {
+    console.error('Error updating project description:', error);
+    res.status(500).json({ 
+      error: 'Failed to update project description',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Extract components
+app.post('/api/v1/compost/session/:sessionId/extract', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    
+    const session = compostingService.getSession(sessionId);
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    
+    // Set up WebSocket progress updates
+    const progressCallback = (progress: any) => {
+      webSocketService.broadcastToSession(sessionId, 'composting-progress', progress);
+    };
+    
+    const components = await compostingService.extractComponents(sessionId, progressCallback);
+    
+    res.json({
+      success: true,
+      message: `Successfully extracted ${components.length} components`,
+      components: components.map(comp => ({
+        id: comp.id,
+        title: comp.title,
+        type: comp.type,
+        tags: comp.tags,
+        reusabilityScore: comp.reusabilityScore,
+        dependencies: comp.dependencies
+      }))
+    });
+    
+  } catch (error) {
+    console.error('Error extracting components:', error);
+    res.status(500).json({ 
+      error: 'Failed to extract components',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Complete composting session
+app.post('/api/v1/compost/session/:sessionId/complete', (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    
+    const session = compostingService.completeSession(sessionId);
+    
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    
+    res.json({ success: true, session });
+  } catch (error) {
+    console.error('Error completing composting session:', error);
+    res.status(500).json({ 
+      error: 'Failed to complete composting session',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Get all composting sessions (for admin dashboard)
+app.get('/api/v1/compost/sessions', (req, res) => {
+  try {
+    const sessions = compostingService.getAllSessions();
+    const sessionStats = sessions.map(session => compostingService.getSessionStats(session.id));
+    
+    res.json({
+      success: true,
+      sessions: sessionStats,
+      totalSessions: sessions.length,
+      activeSessions: sessions.filter(s => s.status !== 'completed').length
+    });
+  } catch (error) {
+    console.error('Error getting composting sessions:', error);
+    res.status(500).json({ 
+      error: 'Failed to get composting sessions',
+      details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });

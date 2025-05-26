@@ -14,9 +14,10 @@ interface ChatMessage {
 interface ConversationSession {
   id: string;
   messages: ChatMessage[];
-  stage: 'concept' | 'requirements' | 'prd' | 'tasks';
+  stage: 'concept' | 'description' | 'requirements' | 'prd' | 'tasks';
   projectName?: string;
   userId?: string;
+  conceptUnderstood?: boolean; // Track when we understand what they want to build
 }
 
 class WebSocketService {
@@ -61,7 +62,7 @@ class WebSocketService {
       socket.on('send-message', async (data: { 
         sessionId: string; 
         message: string; 
-        stage?: 'concept' | 'requirements' | 'prd' | 'tasks';
+        stage?: 'concept' | 'description' | 'requirements' | 'prd' | 'tasks';
         useCase?: 'general' | 'research' | 'quick';
       }) => {
         try {
@@ -76,7 +77,7 @@ class WebSocketService {
       });
 
       // Handle conversation stage changes
-      socket.on('change-stage', (data: { sessionId: string; stage: 'concept' | 'requirements' | 'prd' | 'tasks' }) => {
+      socket.on('change-stage', (data: { sessionId: string; stage: 'concept' | 'description' | 'requirements' | 'prd' | 'tasks' }) => {
         const session = this.conversations.get(data.sessionId);
         if (session) {
           session.stage = data.stage;
@@ -112,7 +113,7 @@ class WebSocketService {
 
     // Update stage if provided
     if (data.stage) {
-      session.stage = data.stage as 'concept' | 'requirements' | 'prd' | 'tasks';
+      session.stage = data.stage as 'concept' | 'description' | 'requirements' | 'prd' | 'tasks';
     }
 
     // Add user message to conversation
@@ -252,6 +253,9 @@ class WebSocketService {
       session.messages.push(assistantMessage);
       this.io.to(data.sessionId).emit('message-complete', assistantMessage);
 
+      // Check if we should transition from concept to description stage
+      await this.checkStageTransition(session, data.sessionId);
+
       console.log(`Message completed for session ${data.sessionId}`);
 
     } catch (error) {
@@ -261,6 +265,81 @@ class WebSocketService {
         message: 'Failed to get AI response', 
         error: error instanceof Error ? error.message : 'Unknown error' 
       });
+    }
+  }
+
+  // Check if we should transition between stages based on conversation content
+  private async checkStageTransition(session: ConversationSession, sessionId: string) {
+    // Get the last user message to check for room entry request
+    const lastUserMessage = session.messages
+      .filter(msg => msg.role === 'user')
+      .pop();
+
+    // Check if user wants to enter the room (from description stage)
+    if (session.stage === 'description' && lastUserMessage) {
+      const userContent = lastUserMessage.content.toLowerCase();
+      const roomEntryPhrases = [
+        'yes lets enter the room',
+        'yes let\'s enter the room',
+        'enter the room',
+        'lets enter the room',
+        'let\'s enter the room',
+        'yes enter the room'
+      ];
+
+      const shouldEnterRoom = roomEntryPhrases.some(phrase => 
+        userContent.includes(phrase)
+      );
+
+      if (shouldEnterRoom) {
+        // Trigger automatic room entry
+        this.io.to(sessionId).emit('auto-enter-room', {
+          message: 'Automatically entering the Room to create your PRD...'
+        });
+        
+        console.log(`🚪 Session ${sessionId} automatically entering the room`);
+        return;
+      }
+    }
+
+    // Only check concept to description transitions for concept stage
+    if (session.stage !== 'concept') return;
+
+    // Look for keywords that indicate the AI understands what they want to build
+    const lastAssistantMessage = session.messages
+      .filter(msg => msg.role === 'assistant')
+      .pop();
+
+    if (!lastAssistantMessage) return;
+
+    const content = lastAssistantMessage.content.toLowerCase();
+    
+    // Check if the AI is asking for detailed description (indicating concept is understood)
+    const descriptionPrompts = [
+      'let\'s create the best possible description',
+      'now let\'s create a comprehensive description',
+      'i need you to be very specific about what we\'re building',
+      'please describe in detail',
+      'the more detailed you are',
+      'be very specific about',
+      'comprehensive description'
+    ];
+
+    const shouldTransition = descriptionPrompts.some(prompt => 
+      content.includes(prompt)
+    );
+
+    if (shouldTransition && !session.conceptUnderstood) {
+      session.conceptUnderstood = true;
+      session.stage = 'description';
+      
+      // Notify clients about stage change
+      this.io.to(sessionId).emit('stage-changed', {
+        stage: 'description',
+        message: 'Moving to detailed description phase'
+      });
+      
+      console.log(`🎯 Session ${sessionId} transitioned to description stage`);
     }
   }
 
@@ -286,6 +365,12 @@ class WebSocketService {
         console.log(`Cleaned up old conversation: ${sessionId}`);
       }
     }
+  }
+
+  // Broadcast message to specific session (for composting progress updates)
+  broadcastToSession(sessionId: string, event: string, data: any) {
+    this.io.to(sessionId).emit(event, data);
+    console.log(`Broadcasted ${event} to session ${sessionId}`);
   }
 }
 

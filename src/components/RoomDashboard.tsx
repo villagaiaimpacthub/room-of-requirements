@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import { io, Socket } from 'socket.io-client';
+import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { v4 as uuidv4 } from 'uuid';
 import { 
   Sparkles, 
   Wand2, 
   BookOpen, 
-  Target, 
-  CheckCircle, 
-  Clock, 
-  Users, 
-  Code, 
-  Lightbulb,
+  FileText, 
   ArrowLeft,
-  Plus,
-  FileText,
-  GitBranch,
-  Recycle,
-  Shuffle
+  Loader2,
+  CheckCircle,
+  Copy,
+  Check,
+  Bot
 } from 'lucide-react';
 
 interface Message {
@@ -23,21 +23,7 @@ interface Message {
   content: string;
   timestamp: Date;
   useCase?: 'general' | 'research' | 'quick';
-}
-
-interface ProjectContext {
-  type: 'build' | 'find' | 'compost' | 'universe' | 'general';
-  title?: string;
-  description?: string;
-  stage: 'concept' | 'requirements' | 'prd' | 'tasks' | 'implementation';
-  insights: string[];
-  nextSteps: string[];
-  resources: Array<{
-    title: string;
-    type: 'component' | 'library' | 'documentation' | 'template';
-    url?: string;
-    description: string;
-  }>;
+  isStreaming?: boolean;
 }
 
 interface RoomDashboardProps {
@@ -46,180 +32,304 @@ interface RoomDashboardProps {
   className?: string;
 }
 
+type RoomPhase = 'summary' | 'prd-generation' | 'prd-complete';
+
 const RoomDashboard: React.FC<RoomDashboardProps> = ({ 
   messages, 
   onBackToChat, 
   className = '' 
 }) => {
-  const [projectContext, setProjectContext] = useState<ProjectContext | null>(null);
-  const [activeSection, setActiveSection] = useState<string>('overview');
+  const [currentPhase, setCurrentPhase] = useState<RoomPhase>('summary');
+  const [conversationSummary, setConversationSummary] = useState<string>('');
+  const [prdContent, setPrdContent] = useState<string>('');
+  const [isGeneratingPRD, setIsGeneratingPRD] = useState(false);
+  const [sessionId] = useState(() => uuidv4());
+  const [copiedContent, setCopiedContent] = useState<string | null>(null);
+  const [socketRef, setSocketRef] = useState<Socket | null>(null);
 
-  // Analyze conversation context to determine project type and insights
+  // Initialize WebSocket connection for PRD generation
+  useEffect(() => {
+    const socket = io('http://localhost:3001', {
+      transports: ['websocket', 'polling'],
+      timeout: 20000,
+      forceNew: true
+    });
+    setSocketRef(socket);
+
+    socket.on('connect', () => {
+      console.log('✅ Room WebSocket connected');
+      socket.emit('join-conversation', sessionId);
+    });
+
+    socket.on('message-start', (message: Message) => {
+      console.log('🚀 PRD generation started:', message.id);
+      setPrdContent('');
+    });
+
+    socket.on('message-chunk', (data: { id: string; content: string }) => {
+      setPrdContent(prev => prev + data.content);
+    });
+
+    socket.on('message-complete', (message: Message) => {
+      console.log('✅ PRD generation completed');
+      setPrdContent(message.content);
+      setIsGeneratingPRD(false);
+      setCurrentPhase('prd-complete');
+    });
+
+    socket.on('error', (error: { message: string }) => {
+      console.error('❌ PRD generation error:', error);
+      setIsGeneratingPRD(false);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [sessionId]);
+
+  // Generate conversation summary on mount
   useEffect(() => {
     if (messages.length > 0) {
-      const context = analyzeConversationContext(messages);
-      setProjectContext(context);
+      const summary = generateConversationSummary(messages);
+      setConversationSummary(summary);
     }
   }, [messages]);
 
-  // Analyze conversation to extract project context
-  const analyzeConversationContext = (msgs: Message[]): ProjectContext => {
+  // Generate markdown summary of the conversation
+  const generateConversationSummary = (msgs: Message[]): string => {
     const userMessages = msgs.filter(m => m.role === 'user');
     const assistantMessages = msgs.filter(m => m.role === 'assistant');
     
-    // Determine project type from first user message
-    const firstMessage = userMessages[0]?.content.toLowerCase() || '';
-    let type: ProjectContext['type'] = 'general';
+    // Extract project title from first meaningful exchange
+    const projectTitle = extractProjectTitle(userMessages);
     
-    if (firstMessage.includes('build') || firstMessage.includes('new idea')) {
-      type = 'build';
-    } else if (firstMessage.includes('find') || firstMessage.includes('component')) {
-      type = 'find';
-    } else if (firstMessage.includes('compost')) {
-      type = 'compost';
-    } else if (firstMessage.includes('universe') || firstMessage.includes('trust')) {
-      type = 'universe';
-    }
-
-    // Extract insights from assistant responses
-    const insights = assistantMessages
-      .slice(0, 3)
-      .map(msg => msg.content.split('\n')[0])
-      .filter(insight => insight.length > 20 && insight.length < 200);
-
-    // Generate next steps based on project type
-    const nextSteps = generateNextSteps(type, userMessages);
+    // Extract key details from the conversation
+    const projectDescription = extractProjectDescription(msgs);
+    const keyFeatures = extractKeyFeatures(msgs);
+    const targetAudience = extractTargetAudience(msgs);
+    const technicalRequirements = extractTechnicalRequirements(msgs);
     
-    // Generate relevant resources
-    const resources = generateResources(type);
+    return `# ${projectTitle}
 
-    return {
-      type,
-      title: extractProjectTitle(userMessages),
-      description: extractProjectDescription(assistantMessages),
-      stage: 'concept',
-      insights: insights.slice(0, 3),
-      nextSteps,
-      resources
-    };
+## Project Overview
+${projectDescription}
+
+## Target Audience
+${targetAudience}
+
+## Key Features
+${keyFeatures}
+
+## Technical Requirements
+${technicalRequirements}
+
+## Conversation Summary
+- **Total Messages**: ${msgs.length}
+- **User Messages**: ${userMessages.length}
+- **Assistant Responses**: ${assistantMessages.length}
+- **Last Activity**: ${new Date(msgs[msgs.length - 1]?.timestamp || new Date()).toLocaleString()}
+
+---
+
+*This summary was generated from your conversation and will be used to create a comprehensive Product Requirements Document (PRD).*`;
   };
 
   const extractProjectTitle = (userMessages: Message[]): string => {
-    const content = userMessages.slice(0, 2).map(m => m.content).join(' ');
-    // Simple extraction - in a real app, you'd use NLP
-    if (content.length > 10) {
-      return content.split('.')[0].substring(0, 50) + '...';
+    const firstMessage = userMessages[0]?.content || '';
+    const secondMessage = userMessages[1]?.content || '';
+    
+    // Look for project-related keywords in early messages
+    const combined = `${firstMessage} ${secondMessage}`.toLowerCase();
+    
+    if (combined.includes('marketplace')) return 'Marketplace Platform';
+    if (combined.includes('ai assistant')) return 'AI Assistant Tool';
+    if (combined.includes('tracking') || combined.includes('practice')) return 'Practice Tracking Application';
+    if (combined.includes('app') || combined.includes('application')) return 'Mobile/Web Application';
+    if (combined.includes('platform')) return 'Digital Platform';
+    if (combined.includes('tool')) return 'Software Tool';
+    
+    // Fallback to first meaningful phrase
+    const words = firstMessage.split(' ').slice(0, 4).join(' ');
+    return words.length > 5 ? `${words} Project` : 'Your Project';
+  };
+
+  const extractProjectDescription = (msgs: Message[]): string => {
+    const userMessages = msgs.filter(m => m.role === 'user');
+    const assistantMessages = msgs.filter(m => m.role === 'assistant');
+    
+    // Look for the most detailed user description
+    const detailedMessage = userMessages.find(m => m.content.length > 100);
+    if (detailedMessage) {
+      return detailedMessage.content.substring(0, 300) + (detailedMessage.content.length > 300 ? '...' : '');
     }
-    return 'Your Project';
-  };
-
-  const extractProjectDescription = (assistantMessages: Message[]): string => {
-    const firstResponse = assistantMessages[0]?.content || '';
-    const sentences = firstResponse.split('.').filter(s => s.length > 20);
-    return sentences[0] + '.' || 'Let\'s develop your idea together.';
-  };
-
-  const generateNextSteps = (type: ProjectContext['type'], userMessages: Message[]): string[] => {
-    const baseSteps = {
-      build: [
-        'Define your core problem and target audience',
-        'Create detailed feature specifications',
-        'Design system architecture',
-        'Set up development environment'
-      ],
-      find: [
-        'Research existing solutions and libraries',
-        'Evaluate compatibility and licensing',
-        'Create integration plan',
-        'Test and validate components'
-      ],
-      compost: [
-        'Audit existing codebase and assets',
-        'Identify reusable components',
-        'Document lessons learned',
-        'Plan graceful sunset strategy'
-      ],
-      universe: [
-        'Explore unexpected connections',
-        'Research emerging technologies',
-        'Connect with relevant communities',
-        'Prototype experimental ideas'
-      ],
-      general: [
-        'Clarify your project goals',
-        'Gather requirements',
-        'Create project roadmap',
-        'Start development planning'
-      ]
-    };
-
-    return baseSteps[type] || baseSteps.general;
-  };
-
-  const generateResources = (type: ProjectContext['type']) => {
-    const resourceMap = {
-      build: [
-        { title: 'React Component Library', type: 'library' as const, description: 'Pre-built UI components for rapid development' },
-        { title: 'API Design Guide', type: 'documentation' as const, description: 'Best practices for designing RESTful APIs' },
-        { title: 'Project Template', type: 'template' as const, description: 'Starter template with modern tooling' }
-      ],
-      find: [
-        { title: 'NPM Package Search', type: 'library' as const, description: 'Discover and evaluate JavaScript packages' },
-        { title: 'Component Gallery', type: 'component' as const, description: 'Browse reusable UI components' },
-        { title: 'Integration Patterns', type: 'documentation' as const, description: 'Common patterns for integrating third-party libraries' }
-      ],
-      compost: [
-        { title: 'Code Analysis Tools', type: 'library' as const, description: 'Tools for analyzing and refactoring legacy code' },
-        { title: 'Migration Guide', type: 'documentation' as const, description: 'Step-by-step guide for project migration' },
-        { title: 'Asset Extraction', type: 'template' as const, description: 'Templates for extracting reusable components' }
-      ],
-      universe: [
-        { title: 'Emerging Tech Radar', type: 'documentation' as const, description: 'Latest trends and technologies to explore' },
-        { title: 'Experimental APIs', type: 'library' as const, description: 'Cutting-edge APIs and frameworks' },
-        { title: 'Innovation Templates', type: 'template' as const, description: 'Templates for experimental projects' }
-      ],
-      general: [
-        { title: 'Project Planning', type: 'template' as const, description: 'Templates and tools for project planning' },
-        { title: 'Development Resources', type: 'library' as const, description: 'Essential libraries and tools' },
-        { title: 'Best Practices', type: 'documentation' as const, description: 'Industry best practices and guidelines' }
-      ]
-    };
-
-    return resourceMap[type] || resourceMap.general;
-  };
-
-  const getProjectTypeIcon = (type: ProjectContext['type']) => {
-    const iconMap = {
-      build: <Lightbulb className="w-5 h-5" />,
-      find: <Code className="w-5 h-5" />,
-      compost: <Recycle className="w-5 h-5" />,
-      universe: <Shuffle className="w-5 h-5" />,
-      general: <Target className="w-5 h-5" />
-    };
-    return iconMap[type] || iconMap.general;
-  };
-
-  const getProjectTypeColor = (type: ProjectContext['type']) => {
-    const colorMap = {
-      build: 'from-blue-500 to-purple-600',
-      find: 'from-green-500 to-teal-600',
-      compost: 'from-orange-500 to-red-600',
-      universe: 'from-purple-500 to-pink-600',
-      general: 'from-amber-500 to-yellow-600'
-    };
-    return colorMap[type] || colorMap.general;
-  };
-
-  if (!projectContext) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-900">
-        <div className="text-center">
-          <Sparkles className="w-12 h-12 text-amber-400 mx-auto mb-4 animate-pulse" />
-          <p className="text-gray-400">Analyzing your conversation...</p>
-        </div>
-      </div>
+    
+    // Fallback to assistant's understanding
+    const assistantSummary = assistantMessages.find(m => 
+      m.content.toLowerCase().includes('understand') || 
+      m.content.toLowerCase().includes('sounds like')
     );
-  }
+    
+    if (assistantSummary) {
+      return assistantSummary.content.substring(0, 300) + (assistantSummary.content.length > 300 ? '...' : '');
+    }
+    
+    return 'A comprehensive solution designed to address specific user needs and provide valuable functionality.';
+  };
+
+  const extractKeyFeatures = (msgs: Message[]): string => {
+    const userMessages = msgs.filter(m => m.role === 'user');
+    const features: string[] = [];
+    
+    // Look for feature-related keywords
+    userMessages.forEach(msg => {
+      const content = msg.content.toLowerCase();
+      if (content.includes('feature') || content.includes('function') || content.includes('capability')) {
+        // Extract sentences containing feature keywords
+        const sentences = msg.content.split(/[.!?]+/);
+        sentences.forEach(sentence => {
+          if (sentence.toLowerCase().includes('feature') || 
+              sentence.toLowerCase().includes('function') || 
+              sentence.toLowerCase().includes('should') ||
+              sentence.toLowerCase().includes('will')) {
+            features.push(`- ${sentence.trim()}`);
+          }
+        });
+      }
+    });
+    
+    if (features.length === 0) {
+      return `- Core functionality as discussed in the conversation
+- User-friendly interface
+- Responsive design
+- Data management capabilities`;
+    }
+    
+    return features.slice(0, 8).join('\n');
+  };
+
+  const extractTargetAudience = (msgs: Message[]): string => {
+    const userMessages = msgs.filter(m => m.role === 'user');
+    
+    // Look for audience-related keywords
+    for (const msg of userMessages) {
+      const content = msg.content.toLowerCase();
+      if (content.includes('user') || content.includes('people') || content.includes('audience')) {
+        const sentences = msg.content.split(/[.!?]+/);
+        for (const sentence of sentences) {
+          if (sentence.toLowerCase().includes('user') || 
+              sentence.toLowerCase().includes('people') ||
+              sentence.toLowerCase().includes('who')) {
+            return sentence.trim();
+          }
+        }
+      }
+    }
+    
+    return 'Primary users who will benefit from this solution and its core functionality.';
+  };
+
+  const extractTechnicalRequirements = (msgs: Message[]): string => {
+    const userMessages = msgs.filter(m => m.role === 'user');
+    const techRequirements: string[] = [];
+    
+    // Look for technical keywords
+    userMessages.forEach(msg => {
+      const content = msg.content.toLowerCase();
+      const techKeywords = ['web', 'mobile', 'app', 'api', 'database', 'cloud', 'platform', 'integration', 'react', 'node', 'javascript', 'typescript'];
+      
+      techKeywords.forEach(keyword => {
+        if (content.includes(keyword)) {
+          techRequirements.push(`- ${keyword.charAt(0).toUpperCase() + keyword.slice(1)} integration/support`);
+        }
+      });
+    });
+    
+    if (techRequirements.length === 0) {
+      return `- Modern web technologies
+- Responsive design
+- Scalable architecture
+- Secure data handling`;
+    }
+    
+    return [...new Set(techRequirements)].slice(0, 6).join('\n');
+  };
+
+  // Generate PRD using the specialized prompt
+  const generatePRD = async () => {
+    if (!socketRef) {
+      console.error('No socket connection available');
+      return;
+    }
+
+    setIsGeneratingPRD(true);
+    setCurrentPhase('prd-generation');
+
+    const prdPrompt = `You are an expert technical product manager specializing in feature development and creating comprehensive product requirements documents (PRDs). Your task is to generate a detailed and well-structured PRD based on the following instructions:
+
+<prd_instructions>
+${conversationSummary}
+</prd_instructions>
+
+Follow these steps to create the PRD:
+
+1. Begin with a brief overview explaining the project and the purpose of the document.
+
+2. Use sentence case for all headings except for the title of the document, which should be in title case.
+
+3. Organize your PRD into the following sections:
+   a. Introduction
+   b. Product Overview
+   c. Goals and Objectives
+   d. Target Audience
+   e. Features and Requirements
+   f. User Stories and Acceptance Criteria
+   g. Technical Requirements / Stack
+   h. Design and User Interface
+
+4. For each section, provide detailed and relevant information based on the PRD instructions. Ensure that you:
+   - Use clear and concise language
+   - Provide specific details and metrics where required
+   - Maintain consistency throughout the document
+   - Address all points mentioned in each section
+
+5. When creating user stories and acceptance criteria:
+   - List ALL necessary user stories including primary, alternative, and edge-case scenarios
+   - Assign a unique requirement ID (e.g., ST-101) to each user story for direct traceability
+   - Include at least one user story specifically for secure access or authentication if the application requires user identification
+   - Include at least one user story specifically for Database modelling if the application requires a database
+   - Ensure no potential user interaction is omitted
+   - Make sure each user story is testable
+
+6. Format your PRD professionally:
+   - Use consistent styles
+   - Include numbered sections and subsections
+   - Use bullet points and tables where appropriate to improve readability
+   - Ensure proper spacing and alignment throughout the document
+
+7. Review your PRD to ensure all aspects of the project are covered comprehensively and that there are no contradictions or ambiguities.
+
+Present your final PRD within <PRD> tags. Begin with the title of the document in title case, followed by each section with its corresponding content. Use appropriate subheadings within each section as needed.
+
+Remember to tailor the content to the specific project described in the PRD instructions, providing detailed and relevant information for each section based on the given context.`;
+
+    socketRef.emit('send-message', {
+      sessionId,
+      message: prdPrompt,
+      stage: 'prd',
+      useCase: 'research'
+    });
+  };
+
+  // Copy content to clipboard
+  const copyToClipboard = async (content: string, type: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedContent(type);
+      setTimeout(() => setCopiedContent(null), 2000);
+    } catch (error) {
+      console.error('Failed to copy content:', error);
+    }
+  };
 
   return (
     <div className={`min-h-screen bg-gray-900 ${className}`}>
@@ -229,200 +339,269 @@ const RoomDashboard: React.FC<RoomDashboardProps> = ({
           <div className="flex items-center gap-4">
             <button
               onClick={onBackToChat}
-              className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-700/50 transition-colors"
+              className="w-10 h-10 bg-gradient-to-br from-amber-500 via-yellow-500 to-amber-600 rounded-full flex items-center justify-center shadow-lg magical-glow hover:scale-105 transition-transform duration-200"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-5 h-5 text-amber-900" />
             </button>
-            <div className={`w-10 h-10 bg-gradient-to-br ${getProjectTypeColor(projectContext.type)} rounded-lg flex items-center justify-center shadow-lg`}>
-              {getProjectTypeIcon(projectContext.type)}
+            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg">
+              <FileText className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-white">{projectContext.title}</h1>
-              <p className="text-xs text-gray-400">Room of Requirements • {projectContext.type} project</p>
+              <h1 className="text-lg font-semibold text-white">The Room</h1>
+              <p className="text-xs text-gray-400">
+                {currentPhase === 'summary' && 'Project Summary'}
+                {currentPhase === 'prd-generation' && 'Generating PRD...'}
+                {currentPhase === 'prd-complete' && 'PRD Complete'}
+              </p>
             </div>
           </div>
           
           <div className="flex items-center gap-3">
-            <div className="px-3 py-1.5 bg-gray-700/50 rounded-lg">
-              <span className="text-sm text-gray-300 capitalize">{projectContext.stage}</span>
+            <div className="px-3 py-1.5 bg-purple-900/30 rounded-lg border border-purple-600/30">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-purple-400" />
+                <span className="text-sm text-purple-200 capitalize">
+                  {currentPhase === 'summary' && 'Summary Phase'}
+                  {currentPhase === 'prd-generation' && 'PRD Generation'}
+                  {currentPhase === 'prd-complete' && 'PRD Complete'}
+                </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Left Column - Project Overview */}
-          <div className="lg:col-span-2 space-y-6">
-            
-            {/* Project Summary */}
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        {currentPhase === 'summary' && (
+          <div className="space-y-6">
+            {/* Summary Phase */}
             <div className="bg-gray-800/60 rounded-2xl border border-gray-700/50 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <BookOpen className="w-5 h-5 text-amber-400" />
-                <h2 className="text-lg font-semibold text-white">Project Overview</h2>
-              </div>
-              <p className="text-gray-300 mb-6">{projectContext.description}</p>
-              
-              {/* Insights from Conversation */}
-              {projectContext.insights.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wide">Key Insights</h3>
-                  {projectContext.insights.map((insight, index) => (
-                    <div key={index} className="flex items-start gap-3 p-3 bg-gray-700/30 rounded-lg">
-                      <Sparkles className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
-                      <p className="text-sm text-gray-300">{insight}</p>
-                    </div>
-                  ))}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <BookOpen className="w-5 h-5 text-amber-400" />
+                  <h2 className="text-lg font-semibold text-white">Project Summary</h2>
                 </div>
-              )}
+                <button
+                  onClick={() => copyToClipboard(conversationSummary, 'summary')}
+                  className="p-2 text-gray-400 hover:text-gray-200 rounded-lg transition-colors"
+                  title="Copy summary"
+                >
+                  {copiedContent === 'summary' ? (
+                    <Check className="w-4 h-4 text-green-400" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+              
+              <div className="prose prose-invert max-w-none">
+                <ReactMarkdown
+                  components={{
+                    code({ node, className, children, ...props }: any) {
+                      const match = /language-(\w+)/.exec(className || '');
+                      const isInline = !node?.data || !match;
+                      return !isInline && match ? (
+                        <SyntaxHighlighter
+                          style={vscDarkPlus as any}
+                          language={match[1]}
+                          PreTag="div"
+                          className="rounded-lg !mt-2 !mb-2"
+                        >
+                          {String(children).replace(/\n$/, '')}
+                        </SyntaxHighlighter>
+                      ) : (
+                        <code className="bg-gray-700/60 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+                          {children}
+                        </code>
+                      );
+                    }
+                  }}
+                >
+                  {conversationSummary}
+                </ReactMarkdown>
+              </div>
+            </div>
+
+                         {/* Generate PRD Button */}
+             <div className="flex justify-center">
+               <button
+                 onClick={generatePRD}
+                 disabled={isGeneratingPRD}
+                 className="group relative px-8 py-4 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-400 hover:to-blue-400 text-white font-semibold rounded-2xl shadow-2xl hover:shadow-purple-500/25 transition-all duration-300 flex items-center gap-3 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+               >
+                                 {isGeneratingPRD ? (
+                   <Loader2 className="w-5 h-5 animate-spin" />
+                 ) : (
+                   <Wand2 className="w-5 h-5" />
+                 )}
+                 <span>{isGeneratingPRD ? 'Generating PRD...' : 'Generate Comprehensive PRD'}</span>
+                 {!isGeneratingPRD && <Sparkles className="w-5 h-5" />}
+                
+                {/* Magical glow effect */}
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-400 to-blue-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300 blur-xl"></div>
+                
+                {/* Subtle pulse animation */}
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-400 to-blue-400 opacity-20 animate-ping"></div>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {currentPhase === 'prd-generation' && (
+          <div className="space-y-6">
+            {/* PRD Generation Phase */}
+            <div className="bg-gray-800/60 rounded-2xl border border-gray-700/50 p-8">
+              <div className="text-center space-y-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto">
+                  <Loader2 className="w-8 h-8 text-white animate-spin" />
+                </div>
+                
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-2">Generating Your PRD</h2>
+                  <p className="text-gray-400">
+                    Creating a comprehensive Product Requirements Document based on your project description...
+                  </p>
+                </div>
+                
+                <div className="flex items-center justify-center gap-3">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                    <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                  </div>
+                  <span className="text-sm text-purple-300">Processing...</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Live PRD Content (if streaming) */}
+            {prdContent && (
+              <div className="bg-gray-800/60 rounded-2xl border border-gray-700/50 p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <Bot className="w-5 h-5 text-purple-400" />
+                  <h3 className="text-lg font-semibold text-white">PRD Generation in Progress</h3>
+                </div>
+                
+                <div className="prose prose-invert max-w-none">
+                  <ReactMarkdown
+                    components={{
+                      code({ node, className, children, ...props }: any) {
+                        const match = /language-(\w+)/.exec(className || '');
+                        const isInline = !node?.data || !match;
+                        return !isInline && match ? (
+                          <SyntaxHighlighter
+                            style={vscDarkPlus as any}
+                            language={match[1]}
+                            PreTag="div"
+                            className="rounded-lg !mt-2 !mb-2"
+                          >
+                            {String(children).replace(/\n$/, '')}
+                          </SyntaxHighlighter>
+                        ) : (
+                          <code className="bg-gray-700/60 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+                            {children}
+                          </code>
+                        );
+                      }
+                    }}
+                  >
+                    {prdContent}
+                  </ReactMarkdown>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {currentPhase === 'prd-complete' && (
+          <div className="space-y-6">
+            {/* PRD Complete Phase */}
+            <div className="bg-gray-800/60 rounded-2xl border border-gray-700/50 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-400" />
+                  <h2 className="text-lg font-semibold text-white">Product Requirements Document</h2>
+                </div>
+                <button
+                  onClick={() => copyToClipboard(prdContent, 'prd')}
+                  className="p-2 text-gray-400 hover:text-gray-200 rounded-lg transition-colors"
+                  title="Copy PRD"
+                >
+                  {copiedContent === 'prd' ? (
+                    <Check className="w-4 h-4 text-green-400" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+              
+              <div className="prose prose-invert max-w-none">
+                <ReactMarkdown
+                  components={{
+                    code({ node, className, children, ...props }: any) {
+                      const match = /language-(\w+)/.exec(className || '');
+                      const isInline = !node?.data || !match;
+                      return !isInline && match ? (
+                        <SyntaxHighlighter
+                          style={vscDarkPlus as any}
+                          language={match[1]}
+                          PreTag="div"
+                          className="rounded-lg !mt-2 !mb-2"
+                        >
+                          {String(children).replace(/\n$/, '')}
+                        </SyntaxHighlighter>
+                      ) : (
+                        <code className="bg-gray-700/60 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+                          {children}
+                        </code>
+                      );
+                    }
+                  }}
+                >
+                  {prdContent}
+                </ReactMarkdown>
+              </div>
             </div>
 
             {/* Next Steps */}
             <div className="bg-gray-800/60 rounded-2xl border border-gray-700/50 p-6">
               <div className="flex items-center gap-3 mb-4">
-                <Target className="w-5 h-5 text-blue-400" />
-                <h2 className="text-lg font-semibold text-white">Recommended Next Steps</h2>
-              </div>
-              <div className="space-y-3">
-                {projectContext.nextSteps.map((step, index) => (
-                  <div key={index} className="flex items-center gap-3 p-3 bg-gray-700/30 rounded-lg hover:bg-gray-700/50 transition-colors cursor-pointer group">
-                    <div className="w-6 h-6 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center text-sm font-medium">
-                      {index + 1}
-                    </div>
-                    <p className="text-gray-300 group-hover:text-white transition-colors">{step}</p>
-                    <Plus className="w-4 h-4 text-gray-500 group-hover:text-gray-300 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Resources */}
-            <div className="bg-gray-800/60 rounded-2xl border border-gray-700/50 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <Code className="w-5 h-5 text-green-400" />
-                <h2 className="text-lg font-semibold text-white">Recommended Resources</h2>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {projectContext.resources.map((resource, index) => (
-                  <div key={index} className="p-4 bg-gray-700/30 rounded-lg hover:bg-gray-700/50 transition-colors cursor-pointer group">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 bg-green-500/20 text-green-400 rounded-lg flex items-center justify-center flex-shrink-0">
-                        {resource.type === 'component' && <GitBranch className="w-4 h-4" />}
-                        {resource.type === 'library' && <Code className="w-4 h-4" />}
-                        {resource.type === 'documentation' && <FileText className="w-4 h-4" />}
-                        {resource.type === 'template' && <Wand2 className="w-4 h-4" />}
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-medium text-white group-hover:text-green-400 transition-colors">{resource.title}</h3>
-                        <p className="text-sm text-gray-400 mt-1">{resource.description}</p>
-                        <span className="inline-block mt-2 px-2 py-1 bg-gray-600/50 text-xs text-gray-300 rounded capitalize">
-                          {resource.type}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column - Quick Actions & Progress */}
-          <div className="space-y-6">
-            
-            {/* Quick Actions */}
-            <div className="bg-gray-800/60 rounded-2xl border border-gray-700/50 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <Wand2 className="w-5 h-5 text-amber-400" />
-                <h2 className="text-lg font-semibold text-white">Quick Actions</h2>
-              </div>
-              <div className="space-y-3">
-                <button className="w-full p-3 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 rounded-lg transition-colors text-left">
-                  <div className="flex items-center gap-3">
-                    <FileText className="w-4 h-4" />
-                    <span className="font-medium">Generate PRD</span>
-                  </div>
-                  <p className="text-xs text-amber-300/70 mt-1">Create detailed requirements</p>
-                </button>
-                
-                <button className="w-full p-3 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg transition-colors text-left">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="w-4 h-4" />
-                    <span className="font-medium">Create Tasks</span>
-                  </div>
-                  <p className="text-xs text-blue-300/70 mt-1">Break down into actionable items</p>
-                </button>
-                
-                <button className="w-full p-3 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg transition-colors text-left">
-                  <div className="flex items-center gap-3">
-                    <Code className="w-4 h-4" />
-                    <span className="font-medium">Start Coding</span>
-                  </div>
-                  <p className="text-xs text-green-300/70 mt-1">Generate starter code</p>
-                </button>
-              </div>
-            </div>
-
-            {/* Project Progress */}
-            <div className="bg-gray-800/60 rounded-2xl border border-gray-700/50 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <Clock className="w-5 h-5 text-purple-400" />
-                <h2 className="text-lg font-semibold text-white">Progress</h2>
+                <Sparkles className="w-5 h-5 text-amber-400" />
+                <h3 className="text-lg font-semibold text-white">Next Steps</h3>
               </div>
               
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="text-gray-300">Concept Development</span>
-                    <span className="text-purple-400">75%</span>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button className="p-4 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg transition-colors text-left">
+                  <div className="flex items-center gap-3 mb-2">
+                    <CheckCircle className="w-5 h-5" />
+                    <span className="font-medium">Create Tasks</span>
                   </div>
-                  <div className="w-full bg-gray-700 rounded-full h-2">
-                    <div className="bg-purple-500 h-2 rounded-full" style={{ width: '75%' }}></div>
-                  </div>
-                </div>
+                  <p className="text-xs text-blue-300/70">Break down PRD into actionable development tasks</p>
+                </button>
                 
-                <div>
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="text-gray-300">Requirements</span>
-                    <span className="text-gray-400">0%</span>
+                <button className="p-4 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg transition-colors text-left">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Wand2 className="w-5 h-5" />
+                    <span className="font-medium">Generate Code</span>
                   </div>
-                  <div className="w-full bg-gray-700 rounded-full h-2">
-                    <div className="bg-gray-600 h-2 rounded-full" style={{ width: '0%' }}></div>
-                  </div>
-                </div>
+                  <p className="text-xs text-green-300/70">Create starter code and project structure</p>
+                </button>
                 
-                <div>
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="text-gray-300">Implementation</span>
-                    <span className="text-gray-400">0%</span>
-                  </div>
-                  <div className="w-full bg-gray-700 rounded-full h-2">
-                    <div className="bg-gray-600 h-2 rounded-full" style={{ width: '0%' }}></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Conversation Summary */}
-            <div className="bg-gray-800/60 rounded-2xl border border-gray-700/50 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <Users className="w-5 h-5 text-indigo-400" />
-                <h2 className="text-lg font-semibold text-white">Conversation</h2>
-              </div>
-              <div className="text-sm text-gray-400 space-y-2">
-                <p>{messages.length} messages exchanged</p>
-                <p>Last activity: {new Date(messages[messages.length - 1]?.timestamp || new Date()).toLocaleTimeString()}</p>
                 <button 
                   onClick={onBackToChat}
-                  className="text-indigo-400 hover:text-indigo-300 transition-colors"
+                  className="p-4 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-lg transition-colors text-left"
                 >
-                  Continue conversation →
+                  <div className="flex items-center gap-3 mb-2">
+                    <ArrowLeft className="w-5 h-5" />
+                    <span className="font-medium">Continue Chat</span>
+                  </div>
+                  <p className="text-xs text-purple-300/70">Return to conversation for refinements</p>
                 </button>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

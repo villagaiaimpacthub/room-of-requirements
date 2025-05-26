@@ -24,6 +24,7 @@ interface Message {
   isStreaming?: boolean;
   model?: string;
   useCase?: 'general' | 'research' | 'quick';
+  isStageTransition?: boolean;
 }
 
 interface ChatInterfaceProps {
@@ -46,6 +47,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [aiTyping, setAiTyping] = useState(false);
   const [sessionId] = useState(() => uuidv4());
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [currentStage, setCurrentStage] = useState<'concept' | 'description' | 'requirements' | 'prd' | 'tasks'>('concept');
   
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -55,6 +57,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   // Initialize WebSocket connection
   useEffect(() => {
     console.log('🔌 Connecting to WebSocket at http://localhost:3001');
+    console.log('🔍 Current connection state:', isConnected);
     const socket = io('http://localhost:3001', {
       transports: ['websocket', 'polling'],
       timeout: 20000,
@@ -85,7 +88,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
     socket.on('message', (message: Message) => {
       console.log('📨 Received message:', message);
-      setMessages(prev => [...prev, message]);
+      setMessages(prev => {
+        console.log('📝 Current messages count:', prev.length);
+        const newMessages = [...prev, message];
+        console.log('📝 New messages count:', newMessages.length);
+        return newMessages;
+      });
     });
 
     socket.on('message-start', (message: Message) => {
@@ -114,6 +122,44 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     socket.on('ai-typing', (typing: boolean) => {
       console.log('⌨️ AI typing status:', typing);
       setAiTyping(typing);
+    });
+
+    socket.on('stage-changed', (data: { stage: string; message?: string }) => {
+      console.log('🎯 Stage changed:', data);
+      setCurrentStage(data.stage as 'concept' | 'description' | 'requirements' | 'prd' | 'tasks');
+      
+      if (data.message) {
+        const stageMessage: Message = {
+          id: uuidv4(),
+          role: 'system',
+          content: `✨ ${data.message}`,
+          timestamp: new Date(),
+          isStageTransition: true
+        };
+        setMessages(prev => [...prev, stageMessage]);
+      }
+    });
+
+    socket.on('auto-enter-room', (data: { message: string }) => {
+      console.log('🚪 Auto entering room:', data);
+      
+      // Show the transition message
+      const transitionMessage: Message = {
+        id: uuidv4(),
+        role: 'system',
+        content: `✨ ${data.message}`,
+        timestamp: new Date(),
+        isStageTransition: true
+      };
+      setMessages(prev => [...prev, transitionMessage]);
+      
+      // Automatically trigger room entry after a short delay
+      setTimeout(() => {
+        if (onEnterRoom) {
+          console.log('🚪 Automatically entering the room...');
+          onEnterRoom(messages);
+        }
+      }, 1500); // 1.5 second delay to show the transition message
     });
 
     socket.on('error', (error: { message: string; error?: string }) => {
@@ -160,6 +206,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   // Send message
   const sendMessage = useCallback(() => {
+    console.log('📤 Send message called');
+    console.log('🔍 Send message state:', { 
+      hasInput: !!inputValue.trim(), 
+      inputValue: inputValue.trim(),
+      hasSocket: !!socketRef.current, 
+      isConnected 
+    });
+    
     if (!inputValue.trim() || !socketRef.current || !isConnected) {
       console.log('❌ Cannot send message:', { 
         hasInput: !!inputValue.trim(), 
@@ -174,7 +228,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     socketRef.current.emit('send-message', {
       sessionId,
       message: inputValue.trim(),
-      stage: 'concept',
+      stage: currentStage,
       useCase: 'general'
     });
 
@@ -226,6 +280,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   // Handle suggestion click
   const handleSuggestionClick = (suggestion: string) => {
+    console.log('🎯 Suggestion clicked:', suggestion);
+    console.log('🔍 Connection state:', { 
+      hasSocket: !!socketRef.current, 
+      isConnected,
+      hasCompostHandler: !!onEnterCompost 
+    });
+    
     // Special handling for composting - navigate to composting dashboard
     if (suggestion === "Compost a project" && onEnterCompost) {
       console.log('🌱 Navigating to composting dashboard');
@@ -246,7 +307,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     socketRef.current.emit('send-message', {
       sessionId,
       message: suggestion,
-      stage: 'concept',
+      stage: currentStage,
       useCase: 'general'
     });
 
@@ -265,11 +326,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   return (
     <div className={`flex flex-col h-screen bg-gray-900 ${className}`}>
-      {/* Header - OpenWebUI inspired with magical touches */}
+      {/* Header - Clean and minimal */}
       <div className="flex-shrink-0 bg-gray-800/90 backdrop-blur-sm border-b border-gray-700/50 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-amber-500 via-yellow-500 to-amber-600 rounded-lg flex items-center justify-center shadow-lg magical-glow">
+            <div className="w-10 h-10 bg-gradient-to-br from-amber-500 via-yellow-500 to-amber-600 rounded-full flex items-center justify-center shadow-lg magical-glow">
               <Wand2 className="w-5 h-5 text-amber-900" />
             </div>
             <div>
@@ -279,16 +340,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
           
           <div className="flex items-center gap-3">
-            {/* Enter Room Button - Show when there are enough messages */}
-            {messages.length >= 2 && onEnterRoom && (
-              <button
-                onClick={() => onEnterRoom(messages)}
-                className="px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-amber-900 font-medium rounded-lg transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105"
-              >
-                <Wand2 className="w-4 h-4" />
-                <span>Enter Room</span>
-              </button>
-            )}
+            {/* Stage Indicator */}
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-900/30 rounded-lg border border-amber-600/30">
+              <div className="w-2 h-2 rounded-full bg-amber-400" />
+              <span className="text-sm text-amber-200 capitalize">
+                {currentStage === 'description' ? 'Detailed Description' : currentStage}
+              </span>
+            </div>
             
             {/* Connection Status */}
             <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-700/50 rounded-lg">
@@ -381,7 +439,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       message.role === 'user'
                         ? 'bg-blue-600 text-white'
                         : message.role === 'system'
-                        ? 'bg-red-900/40 text-red-200 border border-red-600/40'
+                        ? message.isStageTransition 
+                          ? 'bg-amber-900/40 text-amber-200 border border-amber-600/40'
+                          : 'bg-red-900/40 text-red-200 border border-red-600/40'
                         : 'bg-gray-800/80 text-gray-100 border border-gray-700/30'
                     }`}>
                       <div className="prose prose-invert max-w-none prose-sm">
@@ -479,7 +539,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 value={inputValue}
                 onChange={handleInputChange}
                 onKeyPress={handleKeyPress}
-                placeholder="Send a Message"
+                placeholder={
+                  currentStage === 'concept' ? "What do you want to build?" :
+                  currentStage === 'description' ? "Describe your project in detail..." :
+                  currentStage === 'requirements' ? "What features do you need?" :
+                  currentStage === 'prd' ? "Let's create your PRD..." :
+                  "Send a message"
+                }
                 className="flex-1 bg-transparent text-white resize-none border-none outline-none placeholder-gray-500 text-sm leading-relaxed min-h-[1.5rem] max-h-[8rem] focus:placeholder-gray-400"
                 rows={1}
                 disabled={!isConnected}
@@ -496,25 +562,22 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         </div>
       </div>
 
-      {/* Floating Enter Room Button - Show when conversation has meaningful content */}
-      {messages.length >= 4 && onEnterRoom && (
-        <div className="fixed bottom-24 right-6 z-50">
+      {/* Floating Enter Room Button - Show when in description stage with meaningful content */}
+      {messages.length >= 4 && currentStage === 'description' && onEnterRoom && (
+        <div className="fixed bottom-28 right-8 z-50">
           <button
             onClick={() => onEnterRoom(messages)}
-            className="group relative px-6 py-3 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-amber-900 font-semibold rounded-full shadow-2xl hover:shadow-amber-500/25 transition-all duration-300 flex items-center gap-3 transform hover:scale-105 animate-pulse hover:animate-none"
+            className="group relative px-5 py-3 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-amber-900 font-semibold rounded-full shadow-2xl hover:shadow-amber-500/25 transition-all duration-300 flex items-center gap-2 transform hover:scale-105"
           >
-            <Sparkles className="w-5 h-5" />
-            <span>Enter the Room</span>
-            <Wand2 className="w-5 h-5" />
+            <Sparkles className="w-4 h-4" />
+            <span className="text-sm">Enter the Room</span>
+            <Wand2 className="w-4 h-4" />
             
             {/* Magical glow effect */}
             <div className="absolute inset-0 rounded-full bg-gradient-to-r from-amber-400 to-yellow-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300 blur-xl"></div>
             
-            {/* Tooltip */}
-            <div className="absolute bottom-full right-0 mb-2 px-3 py-1 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-              Ready to explore your project workspace
-              <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
-            </div>
+            {/* Subtle pulse animation */}
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-amber-400 to-yellow-400 opacity-20 animate-ping"></div>
           </button>
         </div>
       )}
