@@ -28,10 +28,16 @@ interface Message {
 
 interface ChatInterfaceProps {
   className?: string;
+  onEnterRoom?: (messages: Message[]) => void;
+  existingMessages?: Message[];
 }
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = '' }) => {
-  const [messages, setMessages] = useState<Message[]>([]);
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
+  className = '', 
+  onEnterRoom,
+  existingMessages = []
+}) => {
+  const [messages, setMessages] = useState<Message[]>(existingMessages);
   const [inputValue, setInputValue] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -46,8 +52,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = '' }) => {
 
   // Initialize WebSocket connection
   useEffect(() => {
-    console.log('🔌 Connecting to WebSocket at http://localhost:3002');
-    const socket = io('http://localhost:3002', {
+    console.log('🔌 Connecting to WebSocket at http://localhost:3001');
+    const socket = io('http://localhost:3001', {
       transports: ['websocket', 'polling'],
       timeout: 20000,
       forceNew: true
@@ -218,10 +224,33 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = '' }) => {
 
   // Handle suggestion click
   const handleSuggestionClick = (suggestion: string) => {
-    setInputValue(suggestion);
+    if (!socketRef.current || !isConnected) {
+      console.log('❌ Cannot send suggestion:', { 
+        hasSocket: !!socketRef.current, 
+        isConnected 
+      });
+      return;
+    }
+
+    console.log('📤 Sending suggestion message:', suggestion);
+    
+    socketRef.current.emit('send-message', {
+      sessionId,
+      message: suggestion,
+      stage: 'concept',
+      useCase: 'general'
+    });
+
+    setIsTyping(false);
+    
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      socketRef.current.emit('typing', { sessionId, isTyping: false });
+    }
+
+    // Focus back to input
     if (inputRef.current) {
       inputRef.current.focus();
-      autoResizeTextarea(inputRef.current);
     }
   };
 
@@ -240,12 +269,25 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = '' }) => {
             </div>
           </div>
           
-          {/* Connection Status */}
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-700/50 rounded-lg">
-            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`} />
-            <span className="text-sm text-gray-300">
-              {isConnected ? 'Connected' : 'Disconnected'}
-            </span>
+          <div className="flex items-center gap-3">
+            {/* Enter Room Button - Show when there are enough messages */}
+            {messages.length >= 2 && onEnterRoom && (
+              <button
+                onClick={() => onEnterRoom(messages)}
+                className="px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-amber-900 font-medium rounded-lg transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                <Wand2 className="w-4 h-4" />
+                <span>Enter Room</span>
+              </button>
+            )}
+            
+            {/* Connection Status */}
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-700/50 rounded-lg">
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`} />
+              <span className="text-sm text-gray-300">
+                {isConnected ? 'Connected' : 'Disconnected'}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -444,6 +486,29 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = '' }) => {
           </div>
         </div>
       </div>
+
+      {/* Floating Enter Room Button - Show when conversation has meaningful content */}
+      {messages.length >= 4 && onEnterRoom && (
+        <div className="fixed bottom-24 right-6 z-50">
+          <button
+            onClick={() => onEnterRoom(messages)}
+            className="group relative px-6 py-3 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-amber-900 font-semibold rounded-full shadow-2xl hover:shadow-amber-500/25 transition-all duration-300 flex items-center gap-3 transform hover:scale-105 animate-pulse hover:animate-none"
+          >
+            <Sparkles className="w-5 h-5" />
+            <span>Enter the Room</span>
+            <Wand2 className="w-5 h-5" />
+            
+            {/* Magical glow effect */}
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-amber-400 to-yellow-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300 blur-xl"></div>
+            
+            {/* Tooltip */}
+            <div className="absolute bottom-full right-0 mb-2 px-3 py-1 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+              Ready to explore your project workspace
+              <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+            </div>
+          </button>
+        </div>
+      )}
     </div>
   );
 };

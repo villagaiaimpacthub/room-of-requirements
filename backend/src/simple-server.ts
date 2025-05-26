@@ -12,8 +12,14 @@ import OpenRouterService from './services/openrouter';
 // Load environment variables
 dotenv.config();
 
+// Temporary fix: Set OpenRouter API key if not found in environment
+if (!process.env.OPENROUTER_API_KEY) {
+  console.log('⚠️ Setting OpenRouter API key from fallback');
+  process.env.OPENROUTER_API_KEY = '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';
+}
+
 const app = express();
-const PORT = process.env.PORT || 3002;
+const PORT = process.env.PORT || 3001;
 
 // Create HTTP server for WebSocket integration
 const server = createServer(app);

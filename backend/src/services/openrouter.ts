@@ -64,10 +64,18 @@ class OpenRouterService {
   private baseUrl = 'https://openrouter.ai/api/v1';
 
   constructor() {
+    console.log('🔍 Environment variables check:');
+    console.log('- NODE_ENV:', process.env.NODE_ENV);
+    console.log('- OPENROUTER_API_KEY present:', !!process.env.OPENROUTER_API_KEY);
+    console.log('- OPENROUTER_API_KEY length:', process.env.OPENROUTER_API_KEY?.length || 0);
+    
     this.apiKey = process.env.OPENROUTER_API_KEY || '';
     if (!this.apiKey) {
+      console.error('❌ OPENROUTER_API_KEY not found in environment variables');
+      console.error('Available env vars:', Object.keys(process.env).filter(key => key.includes('OPENROUTER')));
       throw new Error('OPENROUTER_API_KEY environment variable is required');
     }
+    console.log('✅ OpenRouter API key loaded successfully');
   }
 
   // Get model configuration based on use case
@@ -110,14 +118,24 @@ class OpenRouterService {
 
     console.log(`📤 Request body:`, JSON.stringify(requestBody, null, 2));
 
+    // Debug the authorization header
+    console.log('🔐 Authorization check:');
+    console.log('- API Key present:', !!this.apiKey);
+    console.log('- API Key length:', this.apiKey?.length || 0);
+    console.log('- Authorization header:', `Bearer ${this.apiKey}`.substring(0, 20) + '...');
+
+    const headers = {
+      'Authorization': `Bearer ${this.apiKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': process.env.GITHUB_REPO || 'https://github.com/villagaiaimpacthub/room-of-requirements',
+      'X-Title': 'Room of Requirements',
+    };
+
+    console.log('📋 Request headers:', Object.keys(headers));
+
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': process.env.GITHUB_REPO || 'https://github.com/villagaiaimpacthub/room-of-requirements',
-        'X-Title': 'Room of Requirements',
-      },
+      headers,
       body: JSON.stringify(requestBody),
     });
 
