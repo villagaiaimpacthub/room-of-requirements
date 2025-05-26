@@ -1,0 +1,1060 @@
+{
+  "project": {
+    "name": "Room of Requirements",
+    "version": "1.0.0",
+    "description": "AI-powered platform for project development and marketplace",
+    "created": "2024-01-15",
+    "phases": 6
+  },
+  "tasks": [
+    {
+      "id": "T001",
+      "title": "Project Setup & Infrastructure",
+      "description": "Initialize project structure, dependencies, and basic configuration",
+      "phase": 1,
+      "priority": "critical",
+      "complexity": 4,
+      "estimatedEffort": "2 weeks",
+      "status": "pending",
+      "dependencies": [],
+      "subtasks": [
+        {
+          "id": "T001.1",
+          "title": "Initialize React + Express + TypeScript project",
+          "complexity": 3,
+          "estimatedEffort": "3 days",
+          "dependencies": []
+        },
+        {
+          "id": "T001.2",
+          "title": "Set up MongoDB and Redis connections",
+          "complexity": 4,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T001.1"]
+        },
+        {
+          "id": "T001.3",
+          "title": "Configure TailwindCSS and component library",
+          "complexity": 3,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T001.1"]
+        },
+        {
+          "id": "T001.4",
+          "title": "Set up CI/CD pipeline with GitHub Actions",
+          "complexity": 5,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T001.1"]
+        },
+        {
+          "id": "T001.5",
+          "title": "Configure environment variables and secrets",
+          "complexity": 3,
+          "estimatedEffort": "1 day",
+          "dependencies": ["T001.2"]
+        }
+      ]
+    },
+    {
+      "id": "T002",
+      "title": "Basic Authentication System",
+      "description": "Implement JWT-based authentication with OAuth integration",
+      "phase": 1,
+      "priority": "high",
+      "complexity": 5,
+      "estimatedEffort": "1 week",
+      "status": "pending",
+      "dependencies": ["T001"],
+      "subtasks": [
+        {
+          "id": "T002.1",
+          "title": "JWT token management and middleware",
+          "complexity": 4,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T001.2"]
+        },
+        {
+          "id": "T002.2",
+          "title": "OAuth 2.0 integration (Google, GitHub)",
+          "complexity": 6,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T002.1"]
+        },
+        {
+          "id": "T002.3",
+          "title": "Password hashing and security",
+          "complexity": 4,
+          "estimatedEffort": "1 day",
+          "dependencies": ["T002.1"]
+        },
+        {
+          "id": "T002.4",
+          "title": "Rate limiting for auth endpoints",
+          "complexity": 3,
+          "estimatedEffort": "1 day",
+          "dependencies": ["T002.1"]
+        }
+      ]
+    },
+    {
+      "id": "T003",
+      "title": "WebSocket Communication Setup",
+      "description": "Implement real-time communication for chat interface",
+      "phase": 1,
+      "priority": "critical",
+      "complexity": 6,
+      "estimatedEffort": "1 week",
+      "status": "pending",
+      "dependencies": ["T001"],
+      "subtasks": [
+        {
+          "id": "T003.1",
+          "title": "Socket.io server configuration",
+          "complexity": 4,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T001.1"]
+        },
+        {
+          "id": "T003.2",
+          "title": "Socket.io client integration in React",
+          "complexity": 4,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T003.1"]
+        },
+        {
+          "id": "T003.3",
+          "title": "Message queue for high-volume periods",
+          "complexity": 7,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T003.1"]
+        },
+        {
+          "id": "T003.4",
+          "title": "Connection management and reconnection",
+          "complexity": 5,
+          "estimatedEffort": "1 day",
+          "dependencies": ["T003.2"]
+        }
+      ]
+    },
+    {
+      "id": "T004",
+      "title": "Claude 4 API Integration",
+      "description": "Integrate OpenRouter API for Claude 4 Sonnet access",
+      "phase": 1,
+      "priority": "critical",
+      "complexity": 7,
+      "estimatedEffort": "1.5 weeks",
+      "status": "pending",
+      "dependencies": ["T003"],
+      "subtasks": [
+        {
+          "id": "T004.1",
+          "title": "OpenRouter API client implementation",
+          "complexity": 5,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T003.1"]
+        },
+        {
+          "id": "T004.2",
+          "title": "Real-time message streaming",
+          "complexity": 8,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T004.1", "T003.1"]
+        },
+        {
+          "id": "T004.3",
+          "title": "Error handling and fallback responses",
+          "complexity": 6,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T004.1"]
+        },
+        {
+          "id": "T004.4",
+          "title": "API key management and rotation",
+          "complexity": 5,
+          "estimatedEffort": "1 day",
+          "dependencies": ["T004.1"]
+        },
+        {
+          "id": "T004.5",
+          "title": "Usage analytics and cost monitoring",
+          "complexity": 4,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T004.1"]
+        }
+      ]
+    },
+    {
+      "id": "T005",
+      "title": "Basic Chat Interface",
+      "description": "Create conversational UI with typing indicators and message history",
+      "phase": 1,
+      "priority": "critical",
+      "complexity": 6,
+      "estimatedEffort": "1 week",
+      "status": "pending",
+      "dependencies": ["T004"],
+      "subtasks": [
+        {
+          "id": "T005.1",
+          "title": "Chat message components",
+          "complexity": 4,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T001.3"]
+        },
+        {
+          "id": "T005.2",
+          "title": "Typing indicators and status",
+          "complexity": 3,
+          "estimatedEffort": "1 day",
+          "dependencies": ["T005.1", "T003.2"]
+        },
+        {
+          "id": "T005.3",
+          "title": "Message history and scrolling",
+          "complexity": 4,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T005.1"]
+        },
+        {
+          "id": "T005.4",
+          "title": "Session persistence with Redis",
+          "complexity": 5,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T001.2", "T005.1"]
+        }
+      ]
+    },
+    {
+      "id": "T006",
+      "title": "Multi-Stage Conversation System",
+      "description": "Implement concept → requirements → PRD → tasks pipeline",
+      "phase": 2,
+      "priority": "critical",
+      "complexity": 8,
+      "estimatedEffort": "2 weeks",
+      "status": "pending",
+      "dependencies": ["T005"],
+      "subtasks": [
+        {
+          "id": "T006.1",
+          "title": "State machine for conversation flow",
+          "complexity": 7,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T005.4"]
+        },
+        {
+          "id": "T006.2",
+          "title": "Dynamic prompting based on project type",
+          "complexity": 8,
+          "estimatedEffort": "4 days",
+          "dependencies": ["T006.1"]
+        },
+        {
+          "id": "T006.3",
+          "title": "Progress saving at each stage",
+          "complexity": 6,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T006.1"]
+        },
+        {
+          "id": "T006.4",
+          "title": "Resume interrupted sessions",
+          "complexity": 7,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T006.3"]
+        },
+        {
+          "id": "T006.5",
+          "title": "Template system for document generation",
+          "complexity": 6,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T006.1"]
+        }
+      ]
+    },
+    {
+      "id": "T007",
+      "title": "Requirements Generation System",
+      "description": "Convert concepts into detailed functional requirements",
+      "phase": 2,
+      "priority": "critical",
+      "complexity": 7,
+      "estimatedEffort": "1.5 weeks",
+      "status": "pending",
+      "dependencies": ["T006"],
+      "subtasks": [
+        {
+          "id": "T007.1",
+          "title": "Requirements extraction prompts",
+          "complexity": 6,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T006.2"]
+        },
+        {
+          "id": "T007.2",
+          "title": "Requirements validation and formatting",
+          "complexity": 5,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T007.1"]
+        },
+        {
+          "id": "T007.3",
+          "title": "Iterative requirements refinement",
+          "complexity": 7,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T007.2"]
+        },
+        {
+          "id": "T007.4",
+          "title": "Requirements export to markdown",
+          "complexity": 4,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T007.2"]
+        }
+      ]
+    },
+    {
+      "id": "T008",
+      "title": "PRD Generation System",
+      "description": "Generate comprehensive Product Requirements Documents",
+      "phase": 2,
+      "priority": "critical",
+      "complexity": 8,
+      "estimatedEffort": "2 weeks",
+      "status": "pending",
+      "dependencies": ["T007"],
+      "subtasks": [
+        {
+          "id": "T008.1",
+          "title": "PRD template system",
+          "complexity": 6,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T006.5"]
+        },
+        {
+          "id": "T008.2",
+          "title": "Comprehensive PRD generation prompts",
+          "complexity": 8,
+          "estimatedEffort": "4 days",
+          "dependencies": ["T008.1", "T007.1"]
+        },
+        {
+          "id": "T008.3",
+          "title": "PRD validation and completeness check",
+          "complexity": 7,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T008.2"]
+        },
+        {
+          "id": "T008.4",
+          "title": "PRD export with formatting",
+          "complexity": 5,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T008.3"]
+        },
+        {
+          "id": "T008.5",
+          "title": "PRD version control and history",
+          "complexity": 6,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T008.1"]
+        }
+      ]
+    },
+    {
+      "id": "T009",
+      "title": "TaskMaster Framework Integration",
+      "description": "Integrate with TaskMaster MCP server for task breakdown",
+      "phase": 2,
+      "priority": "high",
+      "complexity": 9,
+      "estimatedEffort": "2 weeks",
+      "status": "pending",
+      "dependencies": ["T008"],
+      "subtasks": [
+        {
+          "id": "T009.1",
+          "title": "TaskMaster MCP client implementation",
+          "complexity": 8,
+          "estimatedEffort": "4 days",
+          "dependencies": ["T008.4"]
+        },
+        {
+          "id": "T009.2",
+          "title": "Task complexity analysis integration",
+          "complexity": 7,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T009.1"]
+        },
+        {
+          "id": "T009.3",
+          "title": "Dependency mapping and visualization",
+          "complexity": 8,
+          "estimatedEffort": "4 days",
+          "dependencies": ["T009.1"]
+        },
+        {
+          "id": "T009.4",
+          "title": "Progress tracking system",
+          "complexity": 6,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T009.1"]
+        }
+      ]
+    },
+    {
+      "id": "T010",
+      "title": "Project Dashboard",
+      "description": "Visual progress tracking and project management interface",
+      "phase": 2,
+      "priority": "medium",
+      "complexity": 6,
+      "estimatedEffort": "1.5 weeks",
+      "status": "pending",
+      "dependencies": ["T009"],
+      "subtasks": [
+        {
+          "id": "T010.1",
+          "title": "Dashboard layout and navigation",
+          "complexity": 4,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T001.3"]
+        },
+        {
+          "id": "T010.2",
+          "title": "Progress visualization components",
+          "complexity": 6,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T010.1", "T009.4"]
+        },
+        {
+          "id": "T010.3",
+          "title": "Task management interface",
+          "complexity": 5,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T010.2"]
+        },
+        {
+          "id": "T010.4",
+          "title": "Analytics and reporting",
+          "complexity": 7,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T009.4"]
+        }
+      ]
+    },
+    {
+      "id": "T011",
+      "title": "Project Storage System",
+      "description": "MongoDB-based project repository with version control",
+      "phase": 3,
+      "priority": "high",
+      "complexity": 6,
+      "estimatedEffort": "1.5 weeks",
+      "status": "pending",
+      "dependencies": ["T001"],
+      "subtasks": [
+        {
+          "id": "T011.1",
+          "title": "MongoDB schema design for projects",
+          "complexity": 5,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T001.2"]
+        },
+        {
+          "id": "T011.2",
+          "title": "Version control implementation",
+          "complexity": 7,
+          "estimatedEffort": "4 days",
+          "dependencies": ["T011.1"]
+        },
+        {
+          "id": "T011.3",
+          "title": "File upload and management system",
+          "complexity": 6,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T011.1"]
+        },
+        {
+          "id": "T011.4",
+          "title": "Backup and redundancy systems",
+          "complexity": 5,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T011.1"]
+        }
+      ]
+    },
+    {
+      "id": "T012",
+      "title": "Elasticsearch Integration",
+      "description": "Search engine setup for project discovery",
+      "phase": 3,
+      "priority": "high",
+      "complexity": 7,
+      "estimatedEffort": "1 week",
+      "status": "pending",
+      "dependencies": ["T011"],
+      "subtasks": [
+        {
+          "id": "T012.1",
+          "title": "Elasticsearch cluster setup",
+          "complexity": 6,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T011.1"]
+        },
+        {
+          "id": "T012.2",
+          "title": "Project indexing pipeline",
+          "complexity": 7,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T012.1", "T011.1"]
+        },
+        {
+          "id": "T012.3",
+          "title": "Search API and query optimization",
+          "complexity": 6,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T012.2"]
+        }
+      ]
+    },
+    {
+      "id": "T013",
+      "title": "Marketplace UI Development",
+      "description": "React-based marketplace interface with responsive design",
+      "phase": 3,
+      "priority": "high",
+      "complexity": 7,
+      "estimatedEffort": "2 weeks",
+      "status": "pending",
+      "dependencies": ["T012"],
+      "subtasks": [
+        {
+          "id": "T013.1",
+          "title": "Marketplace layout and navigation",
+          "complexity": 5,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T001.3"]
+        },
+        {
+          "id": "T013.2",
+          "title": "Project preview components",
+          "complexity": 6,
+          "estimatedEffort": "4 days",
+          "dependencies": ["T013.1"]
+        },
+        {
+          "id": "T013.3",
+          "title": "Advanced search and filtering UI",
+          "complexity": 7,
+          "estimatedEffort": "4 days",
+          "dependencies": ["T013.1", "T012.3"]
+        },
+        {
+          "id": "T013.4",
+          "title": "Mobile responsive optimization",
+          "complexity": 5,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T013.2", "T013.3"]
+        }
+      ]
+    },
+    {
+      "id": "T014",
+      "title": "Payment Processing Integration",
+      "description": "Stripe integration for marketplace transactions",
+      "phase": 3,
+      "priority": "high",
+      "complexity": 8,
+      "estimatedEffort": "2 weeks",
+      "status": "pending",
+      "dependencies": ["T013"],
+      "subtasks": [
+        {
+          "id": "T014.1",
+          "title": "Stripe API integration",
+          "complexity": 7,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T002"]
+        },
+        {
+          "id": "T014.2",
+          "title": "Payment flow implementation",
+          "complexity": 8,
+          "estimatedEffort": "4 days",
+          "dependencies": ["T014.1", "T013.2"]
+        },
+        {
+          "id": "T014.3",
+          "title": "Revenue sharing and payouts",
+          "complexity": 9,
+          "estimatedEffort": "4 days",
+          "dependencies": ["T014.1"]
+        },
+        {
+          "id": "T014.4",
+          "title": "Transaction history and receipts",
+          "complexity": 6,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T014.2"]
+        }
+      ]
+    },
+    {
+      "id": "T015",
+      "title": "Rating and Review System",
+      "description": "Community feedback and rating system for projects",
+      "phase": 3,
+      "priority": "medium",
+      "complexity": 6,
+      "estimatedEffort": "1 week",
+      "status": "pending",
+      "dependencies": ["T013"],
+      "subtasks": [
+        {
+          "id": "T015.1",
+          "title": "Rating database schema",
+          "complexity": 4,
+          "estimatedEffort": "1 day",
+          "dependencies": ["T011.1"]
+        },
+        {
+          "id": "T015.2",
+          "title": "Review submission interface",
+          "complexity": 5,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T015.1", "T013.2"]
+        },
+        {
+          "id": "T015.3",
+          "title": "Rating aggregation and display",
+          "complexity": 6,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T015.1"]
+        },
+        {
+          "id": "T015.4",
+          "title": "Moderation and abuse prevention",
+          "complexity": 7,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T015.2"]
+        }
+      ]
+    },
+    {
+      "id": "T016",
+      "title": "Chat-Based Project Discovery",
+      "description": "Conversational filtering system for marketplace",
+      "phase": 4,
+      "priority": "high",
+      "complexity": 8,
+      "estimatedEffort": "2 weeks",
+      "status": "pending",
+      "dependencies": ["T015"],
+      "subtasks": [
+        {
+          "id": "T016.1",
+          "title": "Intent recognition and NLP",
+          "complexity": 9,
+          "estimatedEffort": "4 days",
+          "dependencies": ["T004.1"]
+        },
+        {
+          "id": "T016.2",
+          "title": "Project recommendation engine",
+          "complexity": 8,
+          "estimatedEffort": "4 days",
+          "dependencies": ["T016.1", "T012.3"]
+        },
+        {
+          "id": "T016.3",
+          "title": "Conversational filtering interface",
+          "complexity": 7,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T016.1", "T005"]
+        },
+        {
+          "id": "T016.4",
+          "title": "User preference learning",
+          "complexity": 8,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T016.2"]
+        }
+      ]
+    },
+    {
+      "id": "T017",
+      "title": "Project Lifecycle Management",
+      "description": "8-state lifecycle tracking and automated transitions",
+      "phase": 4,
+      "priority": "medium",
+      "complexity": 5,
+      "estimatedEffort": "1.5 weeks",
+      "status": "pending",
+      "dependencies": ["T011"],
+      "subtasks": [
+        {
+          "id": "T017.1",
+          "title": "State machine implementation",
+          "complexity": 6,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T011.1"]
+        },
+        {
+          "id": "T017.2",
+          "title": "Automated rule engine",
+          "complexity": 7,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T017.1"]
+        },
+        {
+          "id": "T017.3",
+          "title": "Manual state override controls",
+          "complexity": 4,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T017.1"]
+        },
+        {
+          "id": "T017.4",
+          "title": "Lifecycle analytics dashboard",
+          "complexity": 6,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T017.1"]
+        }
+      ]
+    },
+    {
+      "id": "T018",
+      "title": "User Profiles and Reputation",
+      "description": "Comprehensive user management with reputation scoring",
+      "phase": 4,
+      "priority": "medium",
+      "complexity": 6,
+      "estimatedEffort": "1.5 weeks",
+      "status": "pending",
+      "dependencies": ["T002"],
+      "subtasks": [
+        {
+          "id": "T018.1",
+          "title": "User profile database schema",
+          "complexity": 4,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T002.1"]
+        },
+        {
+          "id": "T018.2",
+          "title": "Reputation algorithm implementation",
+          "complexity": 7,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T018.1", "T015.1"]
+        },
+        {
+          "id": "T018.3",
+          "title": "Profile management interface",
+          "complexity": 5,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T018.1"]
+        },
+        {
+          "id": "T018.4",
+          "title": "Privacy controls and GDPR compliance",
+          "complexity": 8,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T018.1"]
+        }
+      ]
+    },
+    {
+      "id": "T019",
+      "title": "Gemini Pro Integration",
+      "description": "Google AI integration for advanced project analysis",
+      "phase": 5,
+      "priority": "medium",
+      "complexity": 8,
+      "estimatedEffort": "2 weeks",
+      "status": "pending",
+      "dependencies": ["T017"],
+      "subtasks": [
+        {
+          "id": "T019.1",
+          "title": "Google AI API client",
+          "complexity": 6,
+          "estimatedEffort": "2 days",
+          "dependencies": []
+        },
+        {
+          "id": "T019.2",
+          "title": "Project analysis pipeline",
+          "complexity": 8,
+          "estimatedEffort": "4 days",
+          "dependencies": ["T019.1", "T011.1"]
+        },
+        {
+          "id": "T019.3",
+          "title": "Component similarity detection",
+          "complexity": 9,
+          "estimatedEffort": "4 days",
+          "dependencies": ["T019.2"]
+        },
+        {
+          "id": "T019.4",
+          "title": "Vector database for similarity search",
+          "complexity": 8,
+          "estimatedEffort": "4 days",
+          "dependencies": ["T019.3"]
+        }
+      ]
+    },
+    {
+      "id": "T020",
+      "title": "Project Composting System",
+      "description": "AI-powered component extraction and reuse system",
+      "phase": 5,
+      "priority": "medium",
+      "complexity": 9,
+      "estimatedEffort": "2.5 weeks",
+      "status": "pending",
+      "dependencies": ["T019"],
+      "subtasks": [
+        {
+          "id": "T020.1",
+          "title": "Component extraction algorithms",
+          "complexity": 9,
+          "estimatedEffort": "5 days",
+          "dependencies": ["T019.2"]
+        },
+        {
+          "id": "T020.2",
+          "title": "Component tagging and categorization",
+          "complexity": 7,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T020.1"]
+        },
+        {
+          "id": "T020.3",
+          "title": "Compatibility analysis system",
+          "complexity": 8,
+          "estimatedEffort": "4 days",
+          "dependencies": ["T020.1", "T019.4"]
+        },
+        {
+          "id": "T020.4",
+          "title": "Merge recommendation engine",
+          "complexity": 9,
+          "estimatedEffort": "4 days",
+          "dependencies": ["T020.3"]
+        },
+        {
+          "id": "T020.5",
+          "title": "Attribution and licensing management",
+          "complexity": 6,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T020.1"]
+        }
+      ]
+    },
+    {
+      "id": "T021",
+      "title": "Performance Optimization",
+      "description": "Database query optimization and caching strategies",
+      "phase": 6,
+      "priority": "high",
+      "complexity": 7,
+      "estimatedEffort": "2 weeks",
+      "status": "pending",
+      "dependencies": ["T020"],
+      "subtasks": [
+        {
+          "id": "T021.1",
+          "title": "Database query optimization",
+          "complexity": 6,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T011.1", "T012.1"]
+        },
+        {
+          "id": "T021.2",
+          "title": "Redis caching implementation",
+          "complexity": 5,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T001.2"]
+        },
+        {
+          "id": "T021.3",
+          "title": "CDN setup for static assets",
+          "complexity": 4,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T011.3"]
+        },
+        {
+          "id": "T021.4",
+          "title": "API rate limiting and throttling",
+          "complexity": 6,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T004.1"]
+        },
+        {
+          "id": "T021.5",
+          "title": "Load testing and optimization",
+          "complexity": 7,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T021.1", "T021.2"]
+        }
+      ]
+    },
+    {
+      "id": "T022",
+      "title": "Security Hardening",
+      "description": "Security audit, GDPR compliance, and data protection",
+      "phase": 6,
+      "priority": "critical",
+      "complexity": 8,
+      "estimatedEffort": "2 weeks",
+      "status": "pending",
+      "dependencies": ["T018"],
+      "subtasks": [
+        {
+          "id": "T022.1",
+          "title": "Security audit and penetration testing",
+          "complexity": 8,
+          "estimatedEffort": "4 days",
+          "dependencies": ["T002", "T014.1"]
+        },
+        {
+          "id": "T022.2",
+          "title": "Data encryption implementation",
+          "complexity": 7,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T011.1"]
+        },
+        {
+          "id": "T022.3",
+          "title": "GDPR compliance features",
+          "complexity": 8,
+          "estimatedEffort": "4 days",
+          "dependencies": ["T018.4"]
+        },
+        {
+          "id": "T022.4",
+          "title": "Vulnerability scanning and monitoring",
+          "complexity": 6,
+          "estimatedEffort": "3 days",
+          "dependencies": ["T022.1"]
+        }
+      ]
+    },
+    {
+      "id": "T023",
+      "title": "Final Polish and Testing",
+      "description": "UI/UX refinements, bug fixes, and comprehensive testing",
+      "phase": 6,
+      "priority": "high",
+      "complexity": 6,
+      "estimatedEffort": "2 weeks",
+      "status": "pending",
+      "dependencies": ["T021", "T022"],
+      "subtasks": [
+        {
+          "id": "T023.1",
+          "title": "UI/UX refinements and accessibility",
+          "complexity": 5,
+          "estimatedEffort": "4 days",
+          "dependencies": ["T013.4"]
+        },
+        {
+          "id": "T023.2",
+          "title": "Cross-browser compatibility testing",
+          "complexity": 4,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T023.1"]
+        },
+        {
+          "id": "T023.3",
+          "title": "End-to-end testing suite",
+          "complexity": 7,
+          "estimatedEffort": "4 days",
+          "dependencies": ["T021.5"]
+        },
+        {
+          "id": "T023.4",
+          "title": "Bug fixes and issue resolution",
+          "complexity": 6,
+          "estimatedEffort": "4 days",
+          "dependencies": ["T023.3"]
+        }
+      ]
+    },
+    {
+      "id": "T024",
+      "title": "Production Deployment",
+      "description": "Deploy to production environment with monitoring",
+      "phase": 6,
+      "priority": "critical",
+      "complexity": 7,
+      "estimatedEffort": "1 week",
+      "status": "pending",
+      "dependencies": ["T023"],
+      "subtasks": [
+        {
+          "id": "T024.1",
+          "title": "Production environment setup",
+          "complexity": 6,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T001.4"]
+        },
+        {
+          "id": "T024.2",
+          "title": "Database migration and seeding",
+          "complexity": 5,
+          "estimatedEffort": "1 day",
+          "dependencies": ["T024.1", "T011.1"]
+        },
+        {
+          "id": "T024.3",
+          "title": "Monitoring and alerting setup",
+          "complexity": 6,
+          "estimatedEffort": "2 days",
+          "dependencies": ["T024.1"]
+        },
+        {
+          "id": "T024.4",
+          "title": "DNS configuration and SSL certificates",
+          "complexity": 4,
+          "estimatedEffort": "1 day",
+          "dependencies": ["T024.1"]
+        },
+        {
+          "id": "T024.5",
+          "title": "Deployment automation and rollback",
+          "complexity": 7,
+          "estimatedEffort": "1 day",
+          "dependencies": ["T024.1"]
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "totalTasks": 24,
+    "totalSubtasks": 112,
+    "averageComplexity": 6.7,
+    "estimatedDuration": "24 weeks",
+    "highComplexityTasks": [
+      "T009: TaskMaster Framework Integration (9/10)",
+      "T020: Project Composting System (9/10)",
+      "T016: Chat-Based Project Discovery (8/10)",
+      "T019: Gemini Pro Integration (8/10)",
+      "T022: Security Hardening (8/10)"
+    ],
+    "criticalPath": [
+      "T001", "T003", "T004", "T005", "T006", "T007", "T008", "T009", "T024"
+    ],
+    "riskFactors": [
+      "High complexity AI integrations",
+      "External API dependencies",
+      "Complex marketplace mechanics",
+      "Advanced ML/AI features",
+      "Security and compliance requirements"
+    ]
+  }
+} 
