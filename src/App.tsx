@@ -5,6 +5,7 @@ import RoomDashboard from './components/RoomDashboard';
 import CompostingDashboard from './components/CompostingDashboard';
 import AdminDashboard from './components/AdminDashboard';
 import TaskMasterPage from './pages/TaskMasterPage';
+import MarketplacePage from './pages/MarketplacePage';
 
 interface Message {
   id: string;
@@ -73,6 +74,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/taskmaster" element={<TaskMasterPage />} />
+        <Route path="/marketplace" element={<MarketplacePage />} />
         <Route path="/*" element={<AppContent />} />
       </Routes>
     </Router>

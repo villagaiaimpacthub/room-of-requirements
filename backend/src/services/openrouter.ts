@@ -196,7 +196,7 @@ class OpenRouterService {
 
         **Building out a new idea**: Ask simple, direct questions to help users clarify their concept. Keep responses short and focused. Once you understand what they want to build, guide them to create a detailed description.
 
-        **Finding an existing component**: Help users discover reusable solutions quickly.
+        **Finding an existing component**: When users want to find existing components, ask them to describe what they're looking for. Use phrases like "What are you looking for?", "What kind of component do you need?", or "Describe what you need" to gather their requirements. Once they provide details, the system will automatically take them to the marketplace.
 
         **Composting a project**: Help extract valuable components from existing projects.
 

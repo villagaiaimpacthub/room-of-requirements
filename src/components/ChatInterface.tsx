@@ -167,6 +167,28 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       }, 1500); // 1.5 second delay to show the transition message
     });
 
+    socket.on('navigate-to-marketplace', (data: { searchQuery: string; message: string }) => {
+      console.log('🛒 Navigating to marketplace:', data);
+      
+      // Show the transition message
+      const transitionMessage: Message = {
+        id: uuidv4(),
+        role: 'system',
+        content: `🛒 ${data.message}`,
+        timestamp: new Date(),
+        isStageTransition: true
+      };
+      setMessages(prev => [...prev, transitionMessage]);
+      
+      // Navigate to marketplace with search query after a short delay
+      setTimeout(() => {
+        const searchParams = new URLSearchParams({
+          chatSearch: data.searchQuery
+        });
+        window.location.href = `/marketplace?${searchParams.toString()}`;
+      }, 1500);
+    });
+
     socket.on('error', (error: { message: string; error?: string }) => {
       console.error('❌ Chat error:', error);
       const errorMessage: Message = {
@@ -296,6 +318,37 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     if (suggestion === "Compost a project" && onEnterCompost) {
       console.log('🌱 Navigating to composting dashboard');
       onEnterCompost();
+      return;
+    }
+
+    // Special handling for finding existing components - start chat-based marketplace flow
+    if (suggestion === "Find an existing component") {
+      console.log('🔍 Starting marketplace search flow');
+      
+      if (!socketRef.current || !isConnected) {
+        console.log('❌ Cannot start marketplace flow - no connection');
+        return;
+      }
+
+      // Send initial marketplace inquiry message
+      socketRef.current.emit('send-message', {
+        sessionId,
+        message: "Find an existing component",
+        stage: currentStage,
+        useCase: 'general'
+      });
+
+      setIsTyping(false);
+      
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        socketRef.current.emit('typing', { sessionId, isTyping: false });
+      }
+
+      // Focus back to input for user to describe what they're looking for
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
       return;
     }
 

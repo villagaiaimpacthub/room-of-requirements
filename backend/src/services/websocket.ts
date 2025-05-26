@@ -316,6 +316,71 @@ class WebSocketService {
       }
     }
 
+    // Check if user wants to find existing components and navigate to marketplace
+    if (lastUserMessage) {
+      const userContent = lastUserMessage.content.toLowerCase();
+      
+      // Check if the conversation is about finding components
+      const marketplaceKeywords = [
+        'find an existing component',
+        'find existing component',
+        'looking for component',
+        'search for component',
+        'existing solution',
+        'reusable component',
+        'marketplace'
+      ];
+
+      const isMarketplaceInquiry = marketplaceKeywords.some(keyword => 
+        userContent.includes(keyword)
+      );
+
+      // Get the last assistant message to check if AI is asking for details
+      const lastAssistantMessage = session.messages
+        .filter(msg => msg.role === 'assistant')
+        .pop();
+
+      if (isMarketplaceInquiry && lastAssistantMessage) {
+        const assistantContent = lastAssistantMessage.content.toLowerCase();
+        
+        // Check if AI is asking what they're looking for (indicating marketplace flow)
+        const marketplacePrompts = [
+          'what are you looking for',
+          'what kind of component',
+          'what type of solution',
+          'describe what you need',
+          'tell me more about what',
+          'what specific functionality',
+          'what would you like to find'
+        ];
+
+        const isMarketplacePrompt = marketplacePrompts.some(prompt => 
+          assistantContent.includes(prompt)
+        );
+
+        // If user has described what they're looking for after a marketplace inquiry
+        if (isMarketplacePrompt && session.messages.length >= 3) {
+          // Look for the user's description of what they need
+          const recentUserMessages = session.messages
+            .filter(msg => msg.role === 'user')
+            .slice(-2); // Get last 2 user messages
+
+          const searchQuery = recentUserMessages
+            .map(msg => msg.content)
+            .join(' ');
+
+          // Trigger marketplace navigation with search query
+          this.io.to(sessionId).emit('navigate-to-marketplace', {
+            message: 'Taking you to the marketplace to find components...',
+            searchQuery: searchQuery
+          });
+          
+          console.log(`🛒 Session ${sessionId} navigating to marketplace with query: "${searchQuery}"`);
+          return;
+        }
+      }
+    }
+
     // Check for comprehensive content that suggests readiness for PRD creation
     const userMessages = session.messages.filter(msg => msg.role === 'user');
     const hasComprehensiveContent = userMessages.some(msg => {
