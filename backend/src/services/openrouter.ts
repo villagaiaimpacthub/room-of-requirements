@@ -32,7 +32,7 @@ interface OpenRouterResponse {
 // Model configurations for different use cases
 const MODEL_CONFIGS = {
   claude: {
-    id: 'anthropic/claude-4-sonnet',
+    id: 'claude-4-sonnet',
     name: 'Claude 4 Sonnet',
     description: 'Latest Claude model for most tasks',
     temperature: 0.2,
@@ -40,7 +40,7 @@ const MODEL_CONFIGS = {
     useCase: 'general'
   },
   geminiPro: {
-    id: 'google/gemini-2.5-pro',
+    id: 'gemini-2.5-pro',
     name: 'Gemini 2.5 Pro',
     description: 'Latest Gemini Pro for deep research and complex analysis',
     temperature: 0.1,
@@ -48,7 +48,7 @@ const MODEL_CONFIGS = {
     useCase: 'research'
   },
   geminiFlash: {
-    id: 'google/gemini-2.5-flash-preview-04-17',
+    id: 'gemini-2.5-flash-preview-04-17',
     name: 'Gemini 2.5 Flash Preview',
     description: 'Latest Gemini Flash for quick responses',
     temperature: 0.3,
