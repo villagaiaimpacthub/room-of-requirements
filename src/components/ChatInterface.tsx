@@ -143,7 +143,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       }
     });
 
-    socket.on('auto-enter-room', (data: { message: string }) => {
+    socket.on('auto-enter-room', (data: { message: string; conversationHistory?: Message[] }) => {
       console.log('🚪 Auto entering room:', data);
       
       // Show the transition message
@@ -160,7 +160,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       setTimeout(() => {
         if (onEnterRoom) {
           console.log('🚪 Automatically entering the room...');
-          onEnterRoom(messages);
+          // Use the conversation history from the server if available, otherwise use current messages
+          const conversationToPass = data.conversationHistory || messages;
+          onEnterRoom(conversationToPass);
         }
       }, 1500); // 1.5 second delay to show the transition message
     });
@@ -374,7 +376,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       {/* Messages Container - Fixed height with proper spacing */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className="max-w-4xl mx-auto px-4 py-4">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-8">
               {/* Welcome Section */}
@@ -420,11 +422,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               </div>
             </div>
           ) : (
-            <div className="space-y-4 pb-32">
+            <div className="space-y-2 pb-32">
               {messages.map((message) => (
                 <div
                   key={message.id}
-                  className={`group flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'} message-animate`}
+                  className={`group flex gap-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'} message-animate`}
                 >
                   {/* Assistant Avatar - Left side */}
                   {message.role === 'assistant' && (
@@ -436,9 +438,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   {/* Message Content */}
                   <div className={`max-w-[75%] ${message.role === 'user' ? 'flex flex-col items-end' : 'flex flex-col items-start'}`}>
                     {/* Message Header */}
-                    <div className={`flex items-center gap-2 mb-1 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                    <div className={`flex items-center gap-2 mb-0.5 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}>
                       <span className={`text-xs font-medium ${
-                        message.role === 'user' ? 'text-blue-400' : 'text-amber-400'
+                        message.role === 'user' ? 'text-amber-400' : 'text-amber-400'
                       }`}>
                         {message.role === 'user' ? 'You' : 'Claude'}
                       </span>
@@ -448,16 +450,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     </div>
                     
                     {/* Message Bubble */}
-                    <div className={`rounded-2xl px-4 py-3 ${
+                    <div className={`rounded-xl px-2 py-0.5 ${
                       message.role === 'user'
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-gray-800/80 text-gray-100 border border-gray-700/30'
                         : message.role === 'system'
                         ? message.isStageTransition 
                           ? 'bg-amber-900/40 text-amber-200 border border-amber-600/40'
                           : 'bg-red-900/40 text-red-200 border border-red-600/40'
                         : 'bg-gray-800/80 text-gray-100 border border-gray-700/30'
                     }`}>
-                      <div className="prose prose-invert max-w-none prose-sm">
+                      <div className="prose prose-invert max-w-none prose-xs leading-tight">
                         <ReactMarkdown
                           components={{
                             code({ node, className, children, ...props }: any) {
@@ -473,7 +475,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                                   {String(children).replace(/\n$/, '')}
                                 </SyntaxHighlighter>
                               ) : (
-                                <code className="bg-gray-700/60 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+                                <code className="bg-gray-700/60 px-1 py-0.5 rounded text-xs font-mono" {...props}>
                                   {children}
                                 </code>
                               );
@@ -486,7 +488,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     </div>
                     
                     {/* Message Footer */}
-                    <div className={`flex items-center gap-2 mt-1 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                    <div className={`flex items-center gap-2 mt-0.5 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}>
                       <span className="text-xs text-gray-500">
                         {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
@@ -506,8 +508,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   
                   {/* User Avatar - Right side */}
                   {message.role === 'user' && (
-                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                      <User className="w-4 h-4 text-white" />
+                    <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <User className="w-4 h-4 text-amber-900" />
                     </div>
                   )}
                 </div>
@@ -515,15 +517,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               
               {/* AI Typing Indicator */}
               {aiTyping && (
-                <div className="flex gap-3 message-animate">
+                <div className="flex gap-2 message-animate">
                   <div className="w-8 h-8 bg-gradient-to-br from-amber-500/20 to-yellow-500/20 rounded-full flex items-center justify-center flex-shrink-0">
                     <Bot className="w-4 h-4 text-amber-400" />
                   </div>
                   <div className="flex flex-col items-start">
-                    <div className="flex items-center gap-2 mb-1">
+                                          <div className="flex items-center gap-2 mb-0.5">
                       <span className="text-xs font-medium text-amber-400">Claude</span>
                     </div>
-                    <div className="bg-gray-800/80 rounded-2xl px-4 py-3 border border-gray-700/30">
+                    <div className="bg-gray-800/80 rounded-xl px-2 py-0.5 border border-gray-700/30">
                       <div className="flex items-center gap-3">
                         <div className="flex space-x-1">
                           <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
@@ -546,27 +548,30 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       <div className="flex-shrink-0 border-t border-gray-700/50 bg-gray-800/90 backdrop-blur-sm">
         <div className="max-w-4xl mx-auto p-4">
           <div className="bg-gray-800/60 rounded-2xl border border-gray-700/40 focus-within:border-amber-500/40 focus-within:bg-gray-800/80 transition-all duration-200">
-            <div className="flex items-end gap-3 p-4">
-              <textarea
-                ref={inputRef}
-                value={inputValue}
-                onChange={handleInputChange}
-                onKeyPress={handleKeyPress}
-                placeholder={
-                  currentStage === 'concept' ? "What do you want to build?" :
-                  currentStage === 'description' ? "Describe your project in detail..." :
-                  currentStage === 'requirements' ? "What features do you need?" :
-                  currentStage === 'prd' ? "Let's create your PRD..." :
-                  "Send a message"
-                }
-                className="flex-1 bg-transparent text-white resize-none border-none outline-none placeholder-gray-500 text-sm leading-relaxed min-h-[1.5rem] max-h-[8rem] focus:placeholder-gray-400"
-                rows={1}
-                disabled={!isConnected}
-              />
+            <div className="flex items-center gap-3 p-3">
+              <div className="flex-1 flex items-center">
+                <textarea
+                  ref={inputRef}
+                  value={inputValue}
+                  onChange={handleInputChange}
+                  onKeyPress={handleKeyPress}
+                  placeholder={
+                    currentStage === 'concept' ? "What do you want to build?" :
+                    currentStage === 'description' ? "Describe your project in detail..." :
+                    currentStage === 'requirements' ? "What features do you need?" :
+                    currentStage === 'prd' ? "Let's create your PRD..." :
+                    "Send a message"
+                  }
+                  className="w-full bg-transparent text-gray-100 resize-none border-none outline-none placeholder-gray-500 text-sm leading-tight min-h-[1.5rem] max-h-[8rem] focus:placeholder-gray-400 overflow-hidden font-normal"
+                  rows={1}
+                  disabled={!isConnected}
+                  style={{ lineHeight: '1.5rem', paddingTop: '0', paddingBottom: '0' }}
+                />
+              </div>
               <button
                 onClick={sendMessage}
                 disabled={!inputValue.trim() || !isConnected}
-                className="w-8 h-8 bg-amber-500 hover:bg-amber-400 disabled:bg-gray-600 disabled:text-gray-400 text-amber-900 hover:text-amber-800 rounded-lg transition-all duration-200 flex items-center justify-center flex-shrink-0 hover:scale-105 disabled:hover:scale-100"
+                className="w-9 h-9 bg-amber-500 hover:bg-amber-400 disabled:bg-gray-600 disabled:text-gray-400 text-amber-900 hover:text-amber-800 rounded-full transition-all duration-200 flex items-center justify-center flex-shrink-0 hover:scale-105 disabled:hover:scale-100 shadow-lg hover:shadow-amber-500/25"
               >
                 <Send className="w-4 h-4" />
               </button>
@@ -575,8 +580,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         </div>
       </div>
 
-      {/* Floating Enter Room Button - Show when in description stage with meaningful content */}
-      {messages.length >= 4 && currentStage === 'description' && onEnterRoom && (
+      {/* Floating Enter Room Button - Show when there's meaningful content */}
+      {messages.length >= 3 && onEnterRoom && (
         <div className="fixed bottom-28 right-8 z-50">
           <button
             onClick={() => onEnterRoom(messages)}

@@ -1,5 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Upload, FileText, MessageCircle, Sparkles, X, CheckCircle, AlertCircle, Loader2, Wand2 } from 'lucide-react';
+import { 
+  Upload, 
+  FileText, 
+  Image, 
+  File, 
+  X, 
+  Loader2, 
+  CheckCircle, 
+  Sparkles, 
+  MessageCircle, 
+  ArrowLeft,
+  Search,
+  Filter,
+  Star,
+  Download,
+  Eye,
+  DollarSign,
+  User,
+  Calendar,
+  Tag,
+  TrendingUp,
+  Award,
+  Coins
+} from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 
 interface CompostingDashboardProps {
@@ -32,10 +55,28 @@ interface ComponentChunk {
   tags: string[];
   reusabilityScore: number;
   dependencies?: string[];
+  content: string;
+}
+
+interface MarketplaceItem {
+  id: string;
+  name: string;
+  fileType: string;
+  score: number;
+  utility: string;
+  uploader: string;
+  sector: string;
+  uploadDate: string;
+  downloads: number;
+  rating: number;
+  price?: number;
+  description: string;
+  tags: string[];
+  size: string;
 }
 
 const CompostingDashboard: React.FC<CompostingDashboardProps> = ({ onBackToChat }) => {
-  const [currentStep, setCurrentStep] = useState<'upload' | 'describe' | 'process' | 'review'>('upload');
+  const [currentStep, setCurrentStep] = useState<'upload' | 'describe' | 'process' | 'review' | 'marketplace'>('upload');
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [processedFiles, setProcessedFiles] = useState<ProcessedFile[]>([]);
   const [components, setComponents] = useState<ComponentChunk[]>([]);
@@ -47,6 +88,11 @@ const CompostingDashboard: React.FC<CompostingDashboardProps> = ({ onBackToChat 
   const [progressMessage, setProgressMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [aiThoughts, setAiThoughts] = useState<string[]>([]);
+  const [showAiThoughts, setShowAiThoughts] = useState(false);
+  const [marketplaceItems, setMarketplaceItems] = useState<MarketplaceItem[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedSector, setSelectedSector] = useState('all');
+  const [selectedItem, setSelectedItem] = useState<MarketplaceItem | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const socketRef = useRef<Socket | null>(null);
@@ -640,8 +686,79 @@ My Requirements:
                       await fetch(`http://localhost:3001/api/v1/compost/session/${session.id}/complete`, {
                         method: 'POST',
                       });
-                      // Could navigate to marketplace or show success message
-                      alert('Components successfully added to the ecosystem!');
+                      
+                      // Add the newly composted components to marketplace
+                      const newMarketplaceItems: MarketplaceItem[] = components.map((comp, index) => ({
+                        id: `new-${comp.id}`,
+                        name: comp.title,
+                        fileType: comp.type,
+                        score: comp.reusabilityScore,
+                        utility: comp.type === 'code' ? 'Development' : comp.type === 'documentation' ? 'Documentation' : 'Configuration',
+                        uploader: 'You',
+                        sector: comp.type,
+                        uploadDate: new Date().toLocaleDateString(),
+                        downloads: 0,
+                        rating: 0,
+                        price: Math.floor(Math.random() * 50) + 10,
+                        description: comp.content,
+                        tags: comp.tags,
+                        size: `${Math.floor(Math.random() * 100) + 10}KB`
+                      }));
+                      
+                      // Add some sample marketplace items
+                      const sampleItems: MarketplaceItem[] = [
+                        {
+                          id: 'sample-1',
+                          name: 'React Authentication Hook',
+                          fileType: 'code',
+                          score: 92,
+                          utility: 'Authentication',
+                          uploader: 'DevMaster',
+                          sector: 'Security',
+                          uploadDate: '2024-01-15',
+                          downloads: 1247,
+                          rating: 4.8,
+                          price: 25,
+                          description: 'A comprehensive React hook for handling user authentication with JWT tokens, refresh logic, and automatic logout.',
+                          tags: ['react', 'authentication', 'jwt', 'hooks'],
+                          size: '15KB'
+                        },
+                        {
+                          id: 'sample-2',
+                          name: 'API Documentation Template',
+                          fileType: 'documentation',
+                          score: 87,
+                          utility: 'Documentation',
+                          uploader: 'TechWriter',
+                          sector: 'Documentation',
+                          uploadDate: '2024-01-10',
+                          downloads: 892,
+                          rating: 4.6,
+                          price: 15,
+                          description: 'Professional API documentation template with interactive examples, authentication guides, and error handling.',
+                          tags: ['api', 'documentation', 'template', 'swagger'],
+                          size: '8KB'
+                        },
+                        {
+                          id: 'sample-3',
+                          name: 'Docker Compose Configuration',
+                          fileType: 'configuration',
+                          score: 78,
+                          utility: 'DevOps',
+                          uploader: 'CloudExpert',
+                          sector: 'Infrastructure',
+                          uploadDate: '2024-01-08',
+                          downloads: 634,
+                          rating: 4.4,
+                          price: 20,
+                          description: 'Production-ready Docker Compose setup with Redis, PostgreSQL, and monitoring tools.',
+                          tags: ['docker', 'compose', 'redis', 'postgresql'],
+                          size: '5KB'
+                        }
+                      ];
+                      
+                      setMarketplaceItems([...newMarketplaceItems, ...sampleItems]);
+                      setCurrentStep('marketplace');
                     }
                   }}
                   className="px-6 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-500 transition-colors duration-200"
@@ -653,6 +770,291 @@ My Requirements:
           </div>
         )}
 
+        {currentStep === 'marketplace' && (
+          <div className="space-y-8">
+            <div className="flex items-center justify-between mb-6">
+              <button
+                onClick={() => setCurrentStep('review')}
+                className="flex items-center space-x-2 text-slate-400 hover:text-white transition-colors duration-200"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back to Review</span>
+              </button>
+              <div className="text-center flex-1">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-green-400/10 rounded-full mb-4">
+                  <TrendingUp className="w-8 h-8 text-green-400" />
+                </div>
+                <h2 className="text-2xl font-semibold text-white">Component Marketplace</h2>
+                <p className="text-slate-400 max-w-2xl mx-auto">
+                  Your components have been successfully added to the ecosystem! Browse and discover reusable components from the community.
+                </p>
+              </div>
+              <div className="w-24"></div> {/* Spacer for centering */}
+            </div>
+
+            {/* Search and Filter Bar */}
+            <div className="bg-slate-900/30 rounded-lg p-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search components..."
+                    className="w-full pl-10 pr-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Filter className="w-4 h-4 text-slate-400" />
+                  <select
+                    value={selectedSector}
+                    onChange={(e) => setSelectedSector(e.target.value)}
+                    className="bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                  >
+                    <option value="all">All Sectors</option>
+                    <option value="code">Code</option>
+                    <option value="documentation">Documentation</option>
+                    <option value="configuration">Configuration</option>
+                    <option value="design">Design</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Marketplace Table */}
+            {marketplaceItems.length > 0 ? (
+              <div className="bg-slate-900/30 rounded-lg overflow-hidden border border-slate-700/50">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-slate-800/50">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                          Name
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                          File Type
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                          Score
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                          Utility
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                          Uploader
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                          Sector
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-700/50">
+                      {marketplaceItems
+                        .filter(item => 
+                          (selectedSector === 'all' || item.sector.toLowerCase() === selectedSector) &&
+                          (searchTerm === '' || item.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                           item.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
+                        )
+                        .map((item) => (
+                        <tr 
+                          key={item.id} 
+                          className="hover:bg-slate-800/30 transition-colors duration-200 cursor-pointer"
+                          onClick={() => setSelectedItem(item)}
+                        >
+                          <td className="px-6 py-4">
+                            <div className="flex items-center space-x-3">
+                              <div className={`w-3 h-3 rounded-full ${
+                                item.uploader === 'You' ? 'bg-green-400' : 'bg-blue-400'
+                              }`} />
+                              <div>
+                                <div className="text-sm font-medium text-white">{item.name}</div>
+                                <div className="text-xs text-slate-400">{item.size}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                              item.fileType === 'code' ? 'bg-blue-900/40 text-blue-200' :
+                              item.fileType === 'documentation' ? 'bg-green-900/40 text-green-200' :
+                              item.fileType === 'configuration' ? 'bg-purple-900/40 text-purple-200' :
+                              item.fileType === 'design' ? 'bg-pink-900/40 text-pink-200' :
+                              'bg-slate-700/40 text-slate-300'
+                            }`}>
+                              {item.fileType}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center space-x-2">
+                              <div className={`w-2 h-2 rounded-full ${
+                                item.score >= 80 ? 'bg-green-400' :
+                                item.score >= 60 ? 'bg-yellow-400' :
+                                item.score >= 40 ? 'bg-orange-400' :
+                                'bg-red-400'
+                              }`} />
+                              <span className="text-sm text-white font-medium">{item.score}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-slate-300">{item.utility}</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center space-x-2">
+                              <User className="w-4 h-4 text-slate-400" />
+                              <span className={`text-sm ${item.uploader === 'You' ? 'text-green-400 font-medium' : 'text-slate-300'}`}>
+                                {item.uploader}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-slate-300">{item.sector}</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedItem(item);
+                                }}
+                                className="p-1 text-slate-400 hover:text-blue-400 transition-colors duration-200"
+                                title="View Details"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  alert(`Donating crypto to ${item.uploader} for ${item.name}`);
+                                }}
+                                className="p-1 text-slate-400 hover:text-amber-400 transition-colors duration-200"
+                                title="Donate Crypto"
+                              >
+                                <Coins className="w-4 h-4" />
+                              </button>
+                              {item.price && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    alert(`Purchasing ${item.name} for $${item.price}`);
+                                  }}
+                                  className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors duration-200"
+                                  title={`Purchase for $${item.price}`}
+                                >
+                                  ${item.price}
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-slate-900/50 rounded-xl p-12 text-center">
+                <TrendingUp className="w-12 h-12 mx-auto mb-4 text-slate-400 opacity-50" />
+                <p className="text-slate-400">No components found in the marketplace.</p>
+              </div>
+            )}
+
+            {/* Component Detail Modal */}
+            {selectedItem && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                <div className="bg-slate-800 rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="text-xl font-semibold text-white mb-2">{selectedItem.name}</h3>
+                        <div className="flex items-center space-x-4">
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                            selectedItem.fileType === 'code' ? 'bg-blue-900/40 text-blue-200' :
+                            selectedItem.fileType === 'documentation' ? 'bg-green-900/40 text-green-200' :
+                            selectedItem.fileType === 'configuration' ? 'bg-purple-900/40 text-purple-200' :
+                            selectedItem.fileType === 'design' ? 'bg-pink-900/40 text-pink-200' :
+                            'bg-slate-700/40 text-slate-300'
+                          }`}>
+                            {selectedItem.fileType}
+                          </span>
+                          <div className="flex items-center space-x-1">
+                            <Star className="w-4 h-4 text-yellow-400" />
+                            <span className="text-sm text-slate-300">{selectedItem.rating}</span>
+                          </div>
+                          <span className="text-sm text-slate-400">{selectedItem.downloads} downloads</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setSelectedItem(null)}
+                        className="text-slate-400 hover:text-white transition-colors duration-200"
+                      >
+                        <X className="w-6 h-6" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="text-sm font-medium text-slate-300 mb-2">Description</h4>
+                        <p className="text-slate-400 text-sm">{selectedItem.description}</p>
+                      </div>
+
+                      <div>
+                        <h4 className="text-sm font-medium text-slate-300 mb-2">Tags</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedItem.tags.map((tag, index) => (
+                            <span key={index} className="px-2 py-1 bg-amber-900/30 text-amber-200 rounded text-xs">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <h4 className="text-sm font-medium text-slate-300 mb-1">Uploader</h4>
+                          <p className="text-slate-400 text-sm">{selectedItem.uploader}</p>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-medium text-slate-300 mb-1">Upload Date</h4>
+                          <p className="text-slate-400 text-sm">{selectedItem.uploadDate}</p>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-medium text-slate-300 mb-1">Reusability Score</h4>
+                          <p className="text-slate-400 text-sm">{selectedItem.score}%</p>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-medium text-slate-300 mb-1">File Size</h4>
+                          <p className="text-slate-400 text-sm">{selectedItem.size}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex space-x-3 pt-4">
+                        <button
+                          onClick={() => alert(`Donating crypto to ${selectedItem.uploader}`)}
+                          className="flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-colors duration-200 flex items-center justify-center gap-2"
+                        >
+                          <Coins className="w-4 h-4" />
+                          Donate Crypto
+                        </button>
+                        {selectedItem.price && (
+                          <button
+                            onClick={() => alert(`Purchasing ${selectedItem.name} for $${selectedItem.price}`)}
+                            className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors duration-200 flex items-center justify-center gap-2"
+                          >
+                            <DollarSign className="w-4 h-4" />
+                            Purchase ${selectedItem.price}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
       </div>
     </div>

@@ -32,25 +32,25 @@ interface OpenRouterResponse {
 // Model configurations for different use cases
 const MODEL_CONFIGS = {
   claude: {
-    id: 'anthropic/claude-3-5-sonnet-20241022',
+    id: 'anthropic/claude-3.5-sonnet-20241022',
     name: 'Claude 3.5 Sonnet',
-    description: 'Latest Claude model for most tasks',
+    description: 'Claude 3.5 Sonnet for most tasks',
     temperature: 0.2,
     max_tokens: 8192,
     useCase: 'general'
   },
   geminiPro: {
-    id: 'google/gemini-2.5-pro-preview',
-    name: 'Gemini 2.5 Pro Preview',
-    description: 'Latest Gemini Pro for deep research and complex analysis',
+    id: 'google/gemini-pro',
+    name: 'Gemini Pro',
+    description: 'Gemini Pro for deep research and complex analysis',
     temperature: 0.1,
     max_tokens: 4096,
     useCase: 'research'
   },
   geminiFlash: {
-    id: 'google/gemini-2.5-flash-preview-05-20',
-    name: 'Gemini 2.5 Flash Preview',
-    description: 'Latest Gemini Flash for quick responses',
+    id: 'google/gemini-flash',
+    name: 'Gemini Flash',
+    description: 'Gemini Flash for quick responses',
     temperature: 0.3,
     max_tokens: 4096,
     useCase: 'quick'
@@ -204,7 +204,12 @@ class OpenRouterService {
 
         Keep responses brief and natural. Instead of long explanations, ask one focused question at a time. For example, respond with "What do you have in mind?" rather than lengthy introductions.
         
-        **IMPORTANT**: When you have a clear understanding of what the user wants to build, prompt them to create a comprehensive description by saying something like: "Great! Now let's create the best possible description of your [project type]. I need you to be very specific about what we're building. Please describe in detail: the core functionality, who will use it, what problems it solves, and any specific features you envision. The more detailed you are, the better I can help you build it."`,
+        **IMPORTANT**: 
+        1. When you have a clear understanding of what the user wants to build, prompt them to create a comprehensive description by saying something like: "Great! Now let's create the best possible description of your [project type]. I need you to be very specific about what we're building. Please describe in detail: the core functionality, who will use it, what problems it solves, and any specific features you envision. The more detailed you are, the better I can help you build it."
+        
+        2. If the user has already provided a comprehensive description, PRD, or detailed requirements (especially long, technical content), acknowledge their thoroughness and suggest they "go to the Room of Requirements" or "enter the room" to continue with PRD creation and task breakdown. Look for comprehensive content like detailed project descriptions, technical specifications, user stories, or system architecture.
+        
+        3. Be more proactive about suggesting room entry. If the user has provided substantial information about their project (even if not perfectly comprehensive), suggest moving to the room by saying something like: "This sounds like a great project! Let's go to the Room of Requirements to create a proper PRD and development plan."`,
         
       description: `You are helping the user create a comprehensive, detailed description of their project idea. This description will later be used to create a PRD and development plan.
 
@@ -217,7 +222,18 @@ class OpenRouterService {
         - **Success Criteria**: How will you know this is working well?
         - **Constraints**: Any limitations, budget considerations, or timeline requirements?
 
-        Ask follow-up questions to get more specificity. Push for concrete details rather than vague descriptions. Once you have a comprehensive description, suggest they "Enter the Room" to continue with PRD creation.`,
+        Ask follow-up questions to get more specificity. Push for concrete details rather than vague descriptions. 
+
+        **IMPORTANT**: If the user has already provided a comprehensive description (especially if they've shared a PRD, detailed requirements, or extensive project details), acknowledge their thoroughness and suggest they "go to the Room of Requirements" or "enter the room" to continue with PRD creation and task breakdown. Look for indicators like:
+        - Long, detailed descriptions (500+ characters)
+        - Technical specifications or requirements
+        - User stories or acceptance criteria
+        - System architecture details
+        - Comprehensive feature lists
+        - Multiple specific features mentioned
+        - Clear problem statement and solution
+        
+        When you see substantial content, respond with something like: "This is excellent! You've provided a very comprehensive description. Let's go to the Room of Requirements to create your PRD and break this down into actionable tasks." Be more generous about suggesting room entry - if they have a solid foundation, encourage them to proceed.`,
         
       requirements: `Help create functional requirements. Be concise and ask focused questions about features, user stories, technical needs, and constraints. Keep responses short and actionable.`,
         

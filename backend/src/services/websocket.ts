@@ -275,8 +275,8 @@ class WebSocketService {
       .filter(msg => msg.role === 'user')
       .pop();
 
-    // Check if user wants to enter the room (from description stage)
-    if (session.stage === 'description' && lastUserMessage) {
+    // Check if user wants to enter the room (from any stage if they have enough content)
+    if (lastUserMessage) {
       const userContent = lastUserMessage.content.toLowerCase();
       const roomEntryPhrases = [
         'yes lets enter the room',
@@ -284,21 +284,85 @@ class WebSocketService {
         'enter the room',
         'lets enter the room',
         'let\'s enter the room',
-        'yes enter the room'
+        'lets go to the room',
+        'let\'s go to the room',
+        'go to the room',
+        'yes enter the room',
+        'room of requirements',
+        'go to room',
+        'enter room',
+        'take me to the room',
+        'bring me to the room',
+        'i want to go to the room',
+        'can we go to the room',
+        'ready for the room',
+        'time for the room'
       ];
 
       const shouldEnterRoom = roomEntryPhrases.some(phrase => 
         userContent.includes(phrase)
       );
 
-      if (shouldEnterRoom) {
-        // Trigger automatic room entry
+      // Allow room entry if they have enough conversation content (3+ messages) regardless of stage
+      if (shouldEnterRoom && session.messages.length >= 3) {
+        // Trigger automatic room entry with full conversation context
         this.io.to(sessionId).emit('auto-enter-room', {
-          message: 'Automatically entering the Room to create your PRD...'
+          message: 'Automatically entering the Room to create your PRD...',
+          conversationHistory: session.messages // Include full chat history
         });
         
-        console.log(`🚪 Session ${sessionId} automatically entering the room`);
+        console.log(`🚪 Session ${sessionId} automatically entering the room with ${session.messages.length} messages`);
         return;
+      }
+    }
+
+    // Check for comprehensive content that suggests readiness for PRD creation
+    const userMessages = session.messages.filter(msg => msg.role === 'user');
+    const hasComprehensiveContent = userMessages.some(msg => {
+      const content = msg.content.toLowerCase();
+      const contentLength = msg.content.length;
+      
+      // Check for PRD-like content or comprehensive descriptions
+      const prdIndicators = [
+        'product requirements document',
+        'prd',
+        'technical requirements',
+        'user stories',
+        'acceptance criteria',
+        'functional requirements',
+        'non-functional requirements',
+        'system architecture',
+        'api endpoints',
+        'database schema',
+        'authentication',
+        'user interface',
+        'technical stack'
+      ];
+      
+      const hasPrdIndicators = prdIndicators.some(indicator => content.includes(indicator));
+      const isLongContent = contentLength > 1000; // Long detailed description
+      
+      return hasPrdIndicators || isLongContent;
+    });
+
+    // If user has provided comprehensive content, suggest room entry
+    if (hasComprehensiveContent && session.messages.length >= 3) {
+      const lastAssistantMessage = session.messages
+        .filter(msg => msg.role === 'assistant')
+        .pop();
+      
+      if (lastAssistantMessage) {
+        const assistantContent = lastAssistantMessage.content.toLowerCase();
+        
+        // Check if AI hasn't already suggested room entry
+        const hasRoomSuggestion = assistantContent.includes('room of requirements') || 
+                                 assistantContent.includes('enter the room') ||
+                                 assistantContent.includes('go to the room');
+        
+        if (!hasRoomSuggestion) {
+          // Suggest room entry in next AI response
+          console.log(`💡 Session ${sessionId} has comprehensive content, ready for room entry`);
+        }
       }
     }
 

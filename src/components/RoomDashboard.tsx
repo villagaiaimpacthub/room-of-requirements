@@ -46,6 +46,8 @@ const RoomDashboard: React.FC<RoomDashboardProps> = ({
   const [sessionId] = useState(() => uuidv4());
   const [copiedContent, setCopiedContent] = useState<string | null>(null);
   const [socketRef, setSocketRef] = useState<Socket | null>(null);
+  const [prdProgress, setPrdProgress] = useState(0);
+  const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState(60);
 
   // Initialize WebSocket connection for PRD generation
   useEffect(() => {
@@ -74,12 +76,16 @@ const RoomDashboard: React.FC<RoomDashboardProps> = ({
       console.log('✅ PRD generation completed');
       setPrdContent(message.content);
       setIsGeneratingPRD(false);
+      setPrdProgress(100);
+      setEstimatedTimeRemaining(0);
       setCurrentPhase('prd-complete');
     });
 
     socket.on('error', (error: { message: string }) => {
       console.error('❌ PRD generation error:', error);
       setIsGeneratingPRD(false);
+      setPrdProgress(0);
+      setEstimatedTimeRemaining(0);
     });
 
     return () => {
@@ -263,12 +269,38 @@ ${technicalRequirements}
 
     setIsGeneratingPRD(true);
     setCurrentPhase('prd-generation');
+    setPrdProgress(0);
+    setEstimatedTimeRemaining(60);
+    
+    // Start progress simulation
+    const progressInterval = setInterval(() => {
+      setPrdProgress(prev => {
+        if (prev >= 95) {
+          clearInterval(progressInterval);
+          return prev;
+        }
+        return prev + Math.random() * 3 + 1; // Random progress between 1-4%
+      });
+      
+      setEstimatedTimeRemaining(prev => Math.max(0, prev - 2));
+    }, 1000);
 
-    const prdPrompt = `You are an expert technical product manager specializing in feature development and creating comprehensive product requirements documents (PRDs). Your task is to generate a detailed and well-structured PRD based on the following instructions:
+    // Include full conversation history for context
+    const fullConversationContext = messages.map(msg => 
+      `**${msg.role === 'user' ? 'User' : 'Assistant'}**: ${msg.content}`
+    ).join('\n\n');
 
-<prd_instructions>
+    const prdPrompt = `You are an expert technical product manager specializing in feature development and creating comprehensive product requirements documents (PRDs). Your task is to generate a detailed and well-structured PRD based on the following conversation and project summary:
+
+<conversation_history>
+${fullConversationContext}
+</conversation_history>
+
+<project_summary>
 ${conversationSummary}
-</prd_instructions>
+</project_summary>
+
+**IMPORTANT**: Use BOTH the conversation history and project summary to create a comprehensive PRD. The conversation history contains the original ideas, suggestions, and refinements discussed between the user and assistant. Make sure to incorporate all relevant details, features, and requirements mentioned throughout the conversation.
 
 Follow these steps to create the PRD:
 
@@ -316,7 +348,7 @@ Remember to tailor the content to the specific project described in the PRD inst
       sessionId,
       message: prdPrompt,
       stage: 'prd',
-      useCase: 'research'
+      useCase: 'general'  // Use the working Claude model instead of broken Gemini
     });
   };
 
@@ -462,6 +494,24 @@ Remember to tailor the content to the specific project described in the PRD inst
                   <p className="text-gray-400">
                     Creating a comprehensive Product Requirements Document based on your project description...
                   </p>
+                </div>
+                
+                {/* Progress Bar */}
+                <div className="max-w-md mx-auto space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-purple-300">Progress</span>
+                    <span className="text-purple-300">{Math.round(prdProgress)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-2">
+                    <div 
+                      className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full transition-all duration-1000 ease-out"
+                      style={{ width: `${prdProgress}%` }}
+                    ></div>
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-400">
+                    <span>Analyzing requirements...</span>
+                    <span>~{estimatedTimeRemaining}s remaining</span>
+                  </div>
                 </div>
                 
                 <div className="flex items-center justify-center gap-3">
