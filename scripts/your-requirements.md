@@ -1,5 +1,8 @@
 # Project Requirements Template
 
+> **📝 TEMPLATE FILE - NOT FOR MCP SERVER USE**  
+> This is a template for gathering requirements. The actual project requirements are in `room-of-requirements-requirements.md`
+
 Use this template to gather your initial project requirements before creating a detailed PRD.
 
 ## Basic Project Information

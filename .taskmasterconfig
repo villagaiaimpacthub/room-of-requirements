@@ -42,7 +42,7 @@
     },
     "research": {
       "provider": "openrouter",
-      "modelId": "google/gemini-pro",
+      "modelId": "google/gemini-pro-1.5",
       "maxTokens": 4096,
       "temperature": 0.1
     },

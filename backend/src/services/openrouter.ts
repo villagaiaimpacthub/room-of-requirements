@@ -40,8 +40,8 @@ const MODEL_CONFIGS = {
     useCase: 'general'
   },
   geminiPro: {
-    id: 'google/gemini-pro',
-    name: 'Gemini Pro',
+    id: 'google/gemini-pro-1.5',
+    name: 'Gemini Pro 1.5',
     description: 'Deep research and complex analysis',
     temperature: 0.1,
     max_tokens: 4096,

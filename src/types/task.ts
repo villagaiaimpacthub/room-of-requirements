@@ -291,12 +291,12 @@ export const TASKMASTER_TASKS: Task[] = [
 ];
 
 export interface TaskService {
-  getAllTasks(): Task[];
-  getTaskById(id: string): Task | undefined;
-  getTaskProgress(taskId: string): TaskProgress;
-  getProjectProgress(): ProjectProgress;
-  getNextTaskRecommendation(): NextTaskRecommendation | null;
-  updateTaskStatus(taskId: string, status: TaskStatus): void;
-  updateAcceptanceCriteria(taskId: string, criteriaId: string, completed: boolean): void;
-  updateTechnicalImplementation(taskId: string, implementationId: string, completed: boolean): void;
+  getAllTasks(): Promise<Task[]>;
+  getTaskById(id: string): Promise<Task | undefined>;
+  getTaskProgress(taskId: string): Promise<TaskProgress>;
+  getProjectProgress(): Promise<ProjectProgress>;
+  getNextTaskRecommendation(): Promise<NextTaskRecommendation | null>;
+  updateTaskStatus(taskId: string, status: TaskStatus): Promise<void>;
+  updateAcceptanceCriteria(taskId: string, criteriaId: string, completed: boolean): Promise<void>;
+  updateTechnicalImplementation(taskId: string, implementationId: string, completed: boolean): Promise<void>;
 } 

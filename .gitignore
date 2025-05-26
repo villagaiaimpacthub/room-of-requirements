@@ -103,4 +103,14 @@ ehthumbs.db
 tasks/*.txt
 !tasks/.gitkeep
 scripts/*.json
-!scripts/.gitkeep 
+!scripts/.gitkeep
+
+# Added by Claude Task Master
+logs
+dev-debug.log
+.idea
+.vscode
+# OS specific
+# Task files
+tasks.json
+tasks/ 

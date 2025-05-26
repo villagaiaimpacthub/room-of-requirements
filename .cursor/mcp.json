@@ -4,12 +4,12 @@
       "command": "npx",
       "args": [
         "-y",
-        "--package=task-master-ai",
+        "--package=task-master-ai@latest",
         "task-master-ai"
       ],
       "env": {
-        "ANTHROPIC_API_KEY": "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",
-        "PERPLEXITY_API_KEY": "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",
+        "ANTHROPIC_API_KEY": "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",
+        "PERPLEXITY_API_KEY": "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",
         "MODEL": "claude-3-5-sonnet-20241022",
         "PERPLEXITY_MODEL": "sonar-pro",
         "MAX_TOKENS": 8192,
@@ -19,4 +19,5 @@
       }
     }
   }
-} 
+}
+

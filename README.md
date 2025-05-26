@@ -12,6 +12,9 @@ A comprehensive project template for AI-powered project management and task gene
 - **TailwindCSS v3** for utility-first styling
 - **Express.js** backend with TypeScript
 - **TaskMaster AI** integration for intelligent task generation
+- **MCP Server Integration** - Real-time task data from backend API
+- **TaskMaster Dashboard** - Full-page task management interface
+- **Real-time Data Persistence** - No static data files, all updates saved
 - **ESLint & Prettier** for code quality
 - **Vite** for fast development and building
 - **Zustand** for state management
@@ -114,6 +117,34 @@ npm run dev
 npm run client:dev  # Frontend on http://localhost:3000
 npm run server:dev  # Backend on http://localhost:3001
 ```
+
+## 🔗 TaskMaster API Endpoints
+
+The application includes a comprehensive TaskMaster API for real-time task management:
+
+### Base URL: `http://localhost:3001/api/v1/taskmaster`
+
+- **GET `/tasks`** - Retrieve all tasks with progress calculations
+- **GET `/tasks/:id`** - Get specific task by ID
+- **GET `/progress`** - Get overall project progress and sprint data
+- **GET `/next-recommendation`** - Get AI-powered next task recommendation
+- **PUT `/tasks/:id/status`** - Update task status
+- **PUT `/tasks/:id/acceptance-criteria/:criteriaId`** - Update acceptance criteria
+- **PUT `/tasks/:id/technical-implementation/:implementationId`** - Update technical implementation
+
+### TaskMaster Dashboard
+
+Access the full-page TaskMaster dashboard at: `http://localhost:3000/taskmaster`
+
+Features:
+- Real-time task data from backend API
+- Interactive task management with expandable details
+- Sprint progress tracking
+- AI-powered next task recommendations
+- Dark theme UI matching the application design
+- Automatic data refresh on updates
+
+For detailed API documentation, see `TASKMASTER_MCP_INTEGRATION.md`.
 
 ## 📁 Project Structure
 

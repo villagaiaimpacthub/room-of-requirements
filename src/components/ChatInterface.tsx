@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { v4 as uuidv4 } from 'uuid';
+import { useNavigate } from 'react-router-dom';
 import { 
   Send, 
   MessageCircle, 
@@ -13,7 +14,8 @@ import {
   Check,
   Wand2,
   User,
-  Bot
+  Bot,
+  BarChart3
 } from 'lucide-react';
 
 interface Message {
@@ -53,6 +55,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const navigate = useNavigate();
 
   // Initialize WebSocket connection
   useEffect(() => {
@@ -340,6 +343,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
           
           <div className="flex items-center gap-3">
+            {/* TaskMaster Button - Integrated with header */}
+            <button
+              onClick={() => navigate('/taskmaster')}
+              className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-blue-600/20 to-purple-600/20 hover:from-blue-600/30 hover:to-purple-600/30 border border-blue-500/30 hover:border-blue-400/50 rounded-lg transition-all duration-200 text-blue-300 hover:text-blue-200 text-sm font-medium"
+              title="Open TaskMaster AI Dashboard"
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span>TaskMaster</span>
+            </button>
+            
             {/* Stage Indicator */}
             <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-900/30 rounded-lg border border-amber-600/30">
               <div className="w-2 h-2 rounded-full bg-amber-400" />

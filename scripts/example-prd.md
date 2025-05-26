@@ -1,5 +1,8 @@
 # ImgxAI - Product Requirements Document
 
+> **📋 EXAMPLE FILE - NOT FOR MCP SERVER USE**  
+> This is an example PRD for reference. The actual project PRD is in `room-of-requirements-prd.md`
+
 ## 1. Introduction
 
 This document outlines the comprehensive product requirements for ImgxAI, a web application that enables users to generate images through OpenAI's image generation API. The PRD serves as a reference for the development team, providing detailed specifications for features, user interface, technical requirements, and design guidelines to ensure consistent implementation of the product vision.

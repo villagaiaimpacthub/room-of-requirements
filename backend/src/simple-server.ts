@@ -176,7 +176,7 @@ app.get('/api/v1/conversations/:sessionId/export', (req, res) => {
   }
 });
 
-// Tasks endpoint
+// Tasks endpoint (legacy)
 app.get('/api/v1/tasks', (_req, res) => {
   try {
     const tasksPath = join(__dirname, '../../tasks/tasks.json');
@@ -207,6 +207,18 @@ app.get('/api/v1/tasks', (_req, res) => {
     });
   }
 });
+
+// TaskMaster API endpoints
+import TaskMasterController from './controllers/taskmasterController';
+const taskMasterController = new TaskMasterController();
+
+app.get('/api/v1/taskmaster/tasks', taskMasterController.getAllTasks);
+app.get('/api/v1/taskmaster/tasks/:id', taskMasterController.getTaskById);
+app.get('/api/v1/taskmaster/progress', taskMasterController.getProjectProgress);
+app.get('/api/v1/taskmaster/next-recommendation', taskMasterController.getNextRecommendation);
+app.put('/api/v1/taskmaster/tasks/:id/status', taskMasterController.updateTaskStatus);
+app.put('/api/v1/taskmaster/tasks/:id/acceptance-criteria/:criteriaId', taskMasterController.updateAcceptanceCriteria);
+app.put('/api/v1/taskmaster/tasks/:id/technical-implementation/:implementationId', taskMasterController.updateTechnicalImplementation);
 
 // Composting API endpoints
 

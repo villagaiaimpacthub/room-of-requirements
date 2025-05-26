@@ -1,5 +1,8 @@
 # Product Requirements Document (PRD) Template
 
+> **⚠️ TEMPLATE FILE - NOT FOR MCP SERVER USE**  
+> This is a template for creating new PRDs. The actual project PRD is in `room-of-requirements-prd.md`
+
 ## 1. Project Overview
 
 ### Project Name
