@@ -32,9 +32,9 @@ interface OpenRouterResponse {
 // Model configurations for different use cases
 const MODEL_CONFIGS = {
   claude: {
-    id: 'anthropic/claude-3-5-sonnet-20241022',
-    name: 'Claude 3.5 Sonnet',
-    description: 'Latest Claude model for most tasks',
+    id: 'anthropic/claude-sonnet-4',
+    name: 'Claude Sonnet 4',
+    description: 'Latest Claude 4 model for most tasks',
     temperature: 0.2,
     max_tokens: 8192,
     useCase: 'general'
