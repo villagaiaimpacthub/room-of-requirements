@@ -58,11 +58,14 @@ Room of Requirements is an AI-powered platform that transforms abstract ideas in
 5. User receives project files and integration guidance
 
 #### Journey 3: Project Composting
-1. Creator identifies mature/ending project
-2. AI analyzes project for reusable components
-3. Components are extracted and tagged
-4. Project lifecycle transitions to composting status
-5. Components become available for marketplace discovery
+1. Creator selects "Compost a project" from main interface
+2. User enters dedicated composting dashboard in "the room"
+3. User uploads project files (PDFs, docs, code, images, etc.)
+4. Conversational AI guides user through project description
+5. OpenAI chunks and analyzes all content for reusable components
+6. User reviews extracted components and tags before submission
+7. Components are processed and made available in ecosystem
+8. Admin dashboard tracks all steps and progress in real-time
 
 ## Feature Specifications
 
@@ -190,6 +193,44 @@ Room of Requirements is an AI-powered platform that transforms abstract ideas in
 - Compatibility scoring system
 - Graph database for relationships
 - Attribution and licensing management
+
+#### F3.3: Composting Dashboard Interface
+**Priority:** High | **Complexity:** 7/10 | **Effort:** 3 weeks
+
+**Acceptance Criteria:**
+- Minimal, focused interface for project composting
+- Multi-format file upload (PDF, TXT, MD, DOCX, images, etc.)
+- Conversational interface for project description
+- Real-time progress tracking during processing
+- Component extraction visualization
+- Chunking and tagging preview before submission
+
+**Technical Requirements:**
+- React-based minimal dashboard UI
+- Multi-format file parser (PDF.js, mammoth.js, etc.)
+- File upload with drag-and-drop support
+- OpenAI integration for text chunking and analysis
+- Real-time WebSocket updates for processing status
+- Component preview and editing interface
+
+#### F3.4: Admin Progress Tracking Dashboard
+**Priority:** Medium | **Complexity:** 5/10 | **Effort:** 2 weeks
+
+**Acceptance Criteria:**
+- Development-only admin interface (no authentication)
+- Real-time progress tracking of all composting operations
+- Step-by-step breakdown visualization
+- Task completion status monitoring
+- Error logging and debugging interface
+- Performance metrics and analytics
+
+**Technical Requirements:**
+- Separate admin route with development-only access
+- Real-time dashboard with WebSocket updates
+- Progress tracking database schema
+- Task queue monitoring interface
+- Error logging and display system
+- Performance metrics collection
 
 ### F4: Advanced AI Analysis
 
@@ -442,11 +483,28 @@ interface Component {
 - [ ] Add A/B testing framework
 - [ ] Optimize discovery algorithms
 
-#### Week 15-16: Lifecycle Management
+#### Week 15-16: Lifecycle Management & Composting
 - [ ] Implement state tracking system
 - [ ] Create automated transitions
 - [ ] Build analytics dashboard
 - [ ] Add manual override controls
+
+### Phase 5: Composting System (Weeks 17-20)
+**Goal:** Complete project composting and admin tracking functionality
+
+#### Week 17-18: Composting Dashboard
+- [ ] Create minimal composting dashboard UI
+- [ ] Implement multi-format file upload system
+- [ ] Build file parsing for PDF, DOCX, MD, TXT formats
+- [ ] Integrate conversational interface for project description
+- [ ] Add real-time progress tracking
+
+#### Week 19-20: Component Processing & Admin Dashboard
+- [ ] Integrate OpenAI for content chunking and analysis
+- [ ] Build component extraction and tagging system
+- [ ] Create component preview and editing interface
+- [ ] Implement admin progress tracking dashboard
+- [ ] Add error logging and performance monitoring
 - [ ] Integrate with marketplace
 
 ### Phase 5: AI Analysis & Composting (Weeks 17-20)

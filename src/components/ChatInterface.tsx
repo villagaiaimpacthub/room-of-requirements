@@ -29,12 +29,14 @@ interface Message {
 interface ChatInterfaceProps {
   className?: string;
   onEnterRoom?: (messages: Message[]) => void;
+  onEnterCompost?: () => void;
   existingMessages?: Message[];
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
   className = '', 
   onEnterRoom,
+  onEnterCompost,
   existingMessages = []
 }) => {
   const [messages, setMessages] = useState<Message[]>(existingMessages);
@@ -224,6 +226,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   // Handle suggestion click
   const handleSuggestionClick = (suggestion: string) => {
+    // Special handling for composting - navigate to composting dashboard
+    if (suggestion === "Compost a project" && onEnterCompost) {
+      console.log('🌱 Navigating to composting dashboard');
+      onEnterCompost();
+      return;
+    }
+
     if (!socketRef.current || !isConnected) {
       console.log('❌ Cannot send suggestion:', { 
         hasSocket: !!socketRef.current, 
