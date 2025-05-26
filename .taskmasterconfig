@@ -1,14 +1,15 @@
 {
   "project": {
-    "name": "New TaskMaster Project",
-    "description": "AI-powered project management and task generation",
+    "name": "Room of Requirements",
+    "description": "AI-powered project development from concept to task breakdown",
     "version": "1.0.0"
   },
   "ai": {
-    "model": "openai/gpt-4o-mini",
+    "model": "anthropic/claude-3.5-sonnet",
     "provider": "openrouter",
-    "temperature": 0.7,
-    "maxTokens": 4000
+    "temperature": 0.2,
+    "maxTokens": 8192,
+    "apiKey": "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"
   },
   "tasks": {
     "outputDir": "./tasks",
@@ -18,36 +19,38 @@
     "dependencyTracking": true
   },
   "workflow": {
-    "phases": 7,
+    "phases": 4,
+    "stages": ["concept", "requirements", "prd", "tasks"],
     "toolAllocation": {
-      "cursor": 0.7,
-      "n8n": 0.3
+      "cursor": 0.8,
+      "room": 0.2
     },
     "priorityLevels": ["low", "medium", "high", "critical"]
   },
   "integration": {
     "github": true,
     "documentation": true,
-    "progressTracking": true
+    "progressTracking": true,
+    "openrouter": true
   },
   "models": {
     "main": {
       "provider": "openrouter",
-      "modelId": "anthropic/claude-sonnet-4",
-      "maxTokens": 120000,
+      "modelId": "anthropic/claude-3.5-sonnet",
+      "maxTokens": 8192,
       "temperature": 0.2
     },
     "research": {
       "provider": "openrouter",
-      "modelId": "google/gemini-2.5-pro-exp-03-25",
-      "maxTokens": 8700,
+      "modelId": "google/gemini-pro",
+      "maxTokens": 4096,
       "temperature": 0.1
     },
-    "fallback": {
+    "quick": {
       "provider": "openrouter",
-      "modelId": "openai/gpt-4o-mini",
-      "maxTokens": 8192,
-      "temperature": 0.1
+      "modelId": "google/gemini-flash-1.5",
+      "maxTokens": 4096,
+      "temperature": 0.3
     }
   },
   "global": {
@@ -55,9 +58,8 @@
     "debug": false,
     "defaultSubtasks": 5,
     "defaultPriority": "medium",
-    "projectName": "Taskmaster",
-    "ollamaBaseUrl": "http://localhost:11434/api",
-    "azureOpenaiBaseUrl": "https://your-endpoint.openai.azure.com/",
-    "userId": "1234567890"
+    "projectName": "Room of Requirements",
+    "openrouterApiKey": "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",
+    "userId": "room-user-001"
   }
 } 

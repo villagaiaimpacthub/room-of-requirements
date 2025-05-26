@@ -3,10 +3,19 @@
     "taskmaster-ai": {
       "command": "npx",
       "args": [
-        "taskmaster-ai"
+        "-y",
+        "--package=task-master-ai",
+        "task-master-ai"
       ],
       "env": {
-        "OPENROUTER_API_KEY": "YOUR_OPENROUTER_API_KEY_HERE"
+        "ANTHROPIC_API_KEY": "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",
+        "PERPLEXITY_API_KEY": "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",
+        "MODEL": "claude-3-5-sonnet-20241022",
+        "PERPLEXITY_MODEL": "sonar-pro",
+        "MAX_TOKENS": 8192,
+        "TEMPERATURE": 0.2,
+        "DEFAULT_SUBTASKS": 5,
+        "DEFAULT_PRIORITY": "medium"
       }
     }
   }
