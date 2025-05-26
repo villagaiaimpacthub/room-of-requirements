@@ -45,8 +45,30 @@ class FileProcessorService {
       wordCount: 0
     };
 
+    // Fix MIME type detection for common file extensions
+    let correctedMimeType = mimeType;
+    const extension = path.extname(originalName).toLowerCase();
+    
+    if (mimeType === 'application/octet-stream') {
+      switch (extension) {
+        case '.md':
+        case '.markdown':
+          correctedMimeType = 'text/markdown';
+          break;
+        case '.txt':
+          correctedMimeType = 'text/plain';
+          break;
+        case '.pdf':
+          correctedMimeType = 'application/pdf';
+          break;
+        case '.docx':
+          correctedMimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+          break;
+      }
+    }
+
     try {
-      switch (mimeType) {
+      switch (correctedMimeType) {
         case 'application/pdf':
           content = await this.extractPdfContent(filePath);
           break;
@@ -74,7 +96,7 @@ class FileProcessorService {
       return {
         id: fileId,
         originalName,
-        mimeType,
+        mimeType: correctedMimeType,
         size: stats.size,
         content,
         metadata
