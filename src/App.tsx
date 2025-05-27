@@ -73,8 +73,16 @@ function AppContent() {
             content = content.replace(phrase, '');
           });
           
-          // Remove common filler words but keep important descriptors
-          const fillerWords = ['some', 'nice', 'good', 'great', 'looking', 'for', 'my', 'app', 'application', 'project', 'website', 'system', 'the', 'a', 'an', 'and', 'but', 'with'];
+          // Remove common filler words and adjectives but keep important nouns
+          const fillerWords = [
+            // Articles and prepositions
+            'some', 'the', 'a', 'an', 'and', 'but', 'with', 'for', 'my', 'your', 'our', 'their',
+            // Adjectives that don't add meaning
+            'nice', 'good', 'great', 'cool', 'awesome', 'amazing', 'beautiful', 'pretty', 'lovely', 'wonderful',
+            'looking', 'modern', 'clean', 'simple', 'basic', 'advanced', 'professional', 'sleek', 'elegant',
+            // Generic terms
+            'app', 'application', 'project', 'website', 'system', 'thing', 'stuff', 'component', 'element'
+          ];
           fillerWords.forEach(word => {
             content = content.replace(new RegExp(`\\b${word}\\b`, 'g'), '');
           });
@@ -85,8 +93,25 @@ function AppContent() {
         .join(' ')
         .trim();
 
-      // Navigate to marketplace with intelligent search query
-      const searchQuery = meaningfulKeywords || 'ui components';
+      // Extract and prioritize important technical terms
+      const importantTerms = [
+        'ui', 'interface', 'dashboard', 'form', 'chart', 'table', 'modal', 'navigation', 'nav',
+        'auth', 'authentication', 'login', 'signup', 'payment', 'checkout', 'cart', 'search',
+        'filter', 'button', 'input', 'dropdown', 'menu', 'sidebar', 'header', 'footer',
+        'card', 'list', 'grid', 'calendar', 'date', 'picker', 'slider', 'toggle', 'switch',
+        'notification', 'alert', 'toast', 'popup', 'tooltip', 'badge', 'avatar', 'profile',
+        'upload', 'file', 'image', 'video', 'audio', 'player', 'editor', 'text', 'rich',
+        'api', 'database', 'backend', 'frontend', 'react', 'vue', 'angular', 'node', 'express'
+      ];
+
+      // Find important terms in the meaningful keywords
+      const foundTerms = meaningfulKeywords.split(' ').filter(word => 
+        importantTerms.includes(word.toLowerCase())
+      );
+
+      // Use found important terms, or fall back to meaningful keywords, or default
+      const searchQuery = foundTerms.length > 0 ? foundTerms.join(' ') : 
+                         meaningfulKeywords || 'ui components';
       navigate(`/marketplace?chatSearch=${encodeURIComponent(searchQuery)}`);
     } else {
       // Regular room entry for project building
