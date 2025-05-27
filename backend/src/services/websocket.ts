@@ -335,47 +335,111 @@ class WebSocketService {
         userContent.includes(keyword)
       );
 
-      // Get the last assistant message to check if AI is asking for details
-      const lastAssistantMessage = session.messages
-        .filter(msg => msg.role === 'assistant')
-        .pop();
-
-      if (isMarketplaceInquiry && lastAssistantMessage) {
-        const assistantContent = lastAssistantMessage.content.toLowerCase();
+      // If this is a marketplace inquiry, check if we have enough context to navigate
+      if (isMarketplaceInquiry) {
+        // If this is the initial "Find an existing component" request, wait for more details
+        if (userContent === 'find an existing component' && session.messages.length <= 2) {
+          // Let the AI ask for more details first
+          return;
+        }
         
-        // Check if AI is asking what they're looking for (indicating marketplace flow)
-        const marketplacePrompts = [
-          'what are you looking for',
-          'what kind of component',
-          'what type of solution',
-          'describe what you need',
-          'tell me more about what',
-          'what specific functionality',
-          'what would you like to find'
-        ];
-
-        const isMarketplacePrompt = marketplacePrompts.some(prompt => 
-          assistantContent.includes(prompt)
-        );
-
-        // If user has described what they're looking for after a marketplace inquiry
-        if (isMarketplacePrompt && session.messages.length >= 3) {
-          // Look for the user's description of what they need
-          const recentUserMessages = session.messages
+        // If user has provided any additional details after the initial request, navigate to marketplace
+        if (session.messages.length >= 3) {
+          // Extract meaningful search terms, excluding generic phrases
+          const userMessages = session.messages
             .filter(msg => msg.role === 'user')
-            .slice(-2); // Get last 2 user messages
+            .map(msg => msg.content);
 
-          const searchQuery = recentUserMessages
-            .map(msg => msg.content)
-            .join(' ');
+          // Filter out generic search phrases and extract meaningful keywords
+          const genericPhrases = [
+            'find an existing component',
+            'find existing component', 
+            'looking for component',
+            'search for component',
+            'existing solution',
+            'reusable component'
+          ];
 
-          // Trigger marketplace navigation with search query
+          const meaningfulContent = userMessages
+            .map(msg => {
+              let content = msg.toLowerCase();
+              // Remove generic phrases
+              genericPhrases.forEach(phrase => {
+                content = content.replace(phrase, '');
+              });
+              // Remove common filler words
+              const fillerWords = ['some', 'nice', 'good', 'for', 'my', 'app', 'application', 'the', 'a', 'an'];
+              fillerWords.forEach(word => {
+                content = content.replace(new RegExp(`\\b${word}\\b`, 'g'), '');
+              });
+              return content.trim();
+            })
+            .filter(content => content.length > 0)
+            .join(' ')
+            .trim();
+
+          const searchQuery = meaningfulContent || 'ui components';
+
+          // Trigger marketplace navigation with meaningful search context
           this.io.to(sessionId).emit('navigate-to-marketplace', {
             message: 'Taking you to the marketplace to find components...',
             searchQuery: searchQuery
           });
           
-          console.log(`🛒 Session ${sessionId} navigating to marketplace with query: "${searchQuery}"`);
+          console.log(`🛒 Session ${sessionId} navigating to marketplace with meaningful search: "${searchQuery}"`);
+          return;
+        }
+      }
+
+      // Also check if user has provided specific component details in any recent message
+      const recentUserMessages = session.messages
+        .filter(msg => msg.role === 'user')
+        .slice(-3); // Get last 3 user messages
+
+      const hasComponentDetails = recentUserMessages.some(msg => {
+        const content = msg.content.toLowerCase();
+        return content.includes('ui') || content.includes('form') || content.includes('component') ||
+               content.includes('builder') || content.includes('tool') || content.includes('widget') ||
+               content.includes('payment') || content.includes('chart') || content.includes('table') ||
+               content.includes('modal') || content.includes('navigation') || content.includes('auth');
+      });
+
+      // If we're in a marketplace flow and user has provided component details, navigate
+      if (hasComponentDetails && session.messages.length >= 3) {
+        // Extract meaningful keywords from recent messages
+        const meaningfulKeywords = recentUserMessages
+          .map(msg => {
+            let content = msg.content.toLowerCase();
+            // Remove generic phrases
+            const genericPhrases = ['find an existing component', 'find existing component', 'looking for component'];
+            genericPhrases.forEach(phrase => {
+              content = content.replace(phrase, '');
+            });
+            // Remove filler words but keep important descriptors
+            const fillerWords = ['some', 'for', 'my', 'app', 'application', 'the', 'a', 'an'];
+            fillerWords.forEach(word => {
+              content = content.replace(new RegExp(`\\b${word}\\b`, 'g'), '');
+            });
+            return content.trim();
+          })
+          .filter(content => content.length > 0)
+          .join(' ')
+          .trim();
+
+        const searchQuery = meaningfulKeywords || 'components';
+
+        // Check if we haven't already navigated (avoid duplicate navigation)
+        const hasMarketplaceNavigation = session.messages.some(msg => 
+          msg.role === 'system' && msg.content.includes('marketplace')
+        );
+
+        if (!hasMarketplaceNavigation) {
+          this.io.to(sessionId).emit('navigate-to-marketplace', {
+            message: 'Taking you to the marketplace to find components...',
+            searchQuery: searchQuery
+          });
+          
+          console.log(`🛒 Session ${sessionId} navigating to marketplace with component details: "${searchQuery}"`);
           return;
         }
       }
