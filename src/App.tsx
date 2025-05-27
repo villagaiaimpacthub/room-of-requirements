@@ -36,7 +36,62 @@ function AppContent() {
 
   const handleEnterRoom = (messages: Message[]) => {
     setConversationMessages(messages);
-    setCurrentView('dashboard');
+    
+    // Check if the conversation is about finding existing components
+    const isComponentSearch = messages.some(msg => {
+      const content = msg.content.toLowerCase();
+      return content.includes('find an existing component') || 
+             content.includes('find existing component') ||
+             content.includes('looking for component') ||
+             content.includes('search for component') ||
+             content.includes('existing solution') ||
+             content.includes('reusable component') ||
+             content.includes('marketplace');
+    });
+
+    if (isComponentSearch) {
+      // Extract meaningful keywords from the conversation for marketplace search
+      const userMessages = messages.filter(msg => msg.role === 'user');
+      
+      // Extract meaningful keywords, excluding generic search phrases
+      const meaningfulKeywords = userMessages
+        .map(msg => {
+          let content = msg.content.toLowerCase();
+          
+          // Remove generic search phrases
+          const genericPhrases = [
+            'find an existing component',
+            'find existing component', 
+            'looking for component',
+            'search for component',
+            'existing solution',
+            'reusable component',
+            'marketplace'
+          ];
+          
+          genericPhrases.forEach(phrase => {
+            content = content.replace(phrase, '');
+          });
+          
+          // Remove common filler words but keep important descriptors
+          const fillerWords = ['some', 'nice', 'good', 'great', 'looking', 'for', 'my', 'app', 'application', 'project', 'website', 'system', 'the', 'a', 'an', 'and', 'but', 'with'];
+          fillerWords.forEach(word => {
+            content = content.replace(new RegExp(`\\b${word}\\b`, 'g'), '');
+          });
+          
+          return content.trim();
+        })
+        .filter(content => content.length > 0)
+        .join(' ')
+        .trim();
+
+      // Navigate to marketplace with intelligent search query
+      const searchQuery = meaningfulKeywords || 'ui components';
+      navigate(`/marketplace?chatSearch=${encodeURIComponent(searchQuery)}`);
+    } else {
+      // Regular room entry for project building
+      setCurrentView('dashboard');
+    }
   };
 
   const handleEnterCompost = () => {

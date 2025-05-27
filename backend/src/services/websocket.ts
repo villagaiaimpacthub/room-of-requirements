@@ -335,60 +335,15 @@ class WebSocketService {
         userContent.includes(keyword)
       );
 
-      // If this is a marketplace inquiry, check if we have enough context to navigate
+      // If this is a marketplace inquiry, store context but DON'T auto-navigate
+      // Preserve the magical Room of Requirements button experience
       if (isMarketplaceInquiry) {
-        // If this is the initial "Find an existing component" request, wait for more details
-        if (userContent === 'find an existing component' && session.messages.length <= 2) {
-          // Let the AI ask for more details first
-          return;
-        }
+        console.log(`💬 Component inquiry detected for session ${sessionId}, preserving Room of Requirements button flow`);
         
-        // If user has provided any additional details after the initial request, navigate to marketplace
-        if (session.messages.length >= 3) {
-          // Extract meaningful search terms, excluding generic phrases
-          const userMessages = session.messages
-            .filter(msg => msg.role === 'user')
-            .map(msg => msg.content);
-
-          // Filter out generic search phrases and extract meaningful keywords
-          const genericPhrases = [
-            'find an existing component',
-            'find existing component', 
-            'looking for component',
-            'search for component',
-            'existing solution',
-            'reusable component'
-          ];
-
-          const meaningfulContent = userMessages
-            .map(msg => {
-              let content = msg.toLowerCase();
-              // Remove generic phrases
-              genericPhrases.forEach(phrase => {
-                content = content.replace(phrase, '');
-              });
-              // Remove common filler words
-              const fillerWords = ['some', 'nice', 'good', 'for', 'my', 'app', 'application', 'the', 'a', 'an'];
-              fillerWords.forEach(word => {
-                content = content.replace(new RegExp(`\\b${word}\\b`, 'g'), '');
-              });
-              return content.trim();
-            })
-            .filter(content => content.length > 0)
-            .join(' ')
-            .trim();
-
-          const searchQuery = meaningfulContent || 'ui components';
-
-          // Trigger marketplace navigation with meaningful search context
-          this.io.to(sessionId).emit('navigate-to-marketplace', {
-            message: 'Taking you to the marketplace to find components...',
-            searchQuery: searchQuery
-          });
-          
-          console.log(`🛒 Session ${sessionId} navigating to marketplace with meaningful search: "${searchQuery}"`);
-          return;
-        }
+        // Store the search context for when user manually navigates via Room button
+        // The full conversation context will be used for intelligent marketplace search
+        // This preserves the magical experience where users choose when to "enter the room"
+        return;
       }
 
       // Also check if user has provided specific component details in any recent message
@@ -404,44 +359,10 @@ class WebSocketService {
                content.includes('modal') || content.includes('navigation') || content.includes('auth');
       });
 
-      // If we're in a marketplace flow and user has provided component details, navigate
+      // If we detect component details, store context but preserve Room button flow
       if (hasComponentDetails && session.messages.length >= 3) {
-        // Extract meaningful keywords from recent messages
-        const meaningfulKeywords = recentUserMessages
-          .map(msg => {
-            let content = msg.content.toLowerCase();
-            // Remove generic phrases
-            const genericPhrases = ['find an existing component', 'find existing component', 'looking for component'];
-            genericPhrases.forEach(phrase => {
-              content = content.replace(phrase, '');
-            });
-            // Remove filler words but keep important descriptors
-            const fillerWords = ['some', 'for', 'my', 'app', 'application', 'the', 'a', 'an'];
-            fillerWords.forEach(word => {
-              content = content.replace(new RegExp(`\\b${word}\\b`, 'g'), '');
-            });
-            return content.trim();
-          })
-          .filter(content => content.length > 0)
-          .join(' ')
-          .trim();
-
-        const searchQuery = meaningfulKeywords || 'components';
-
-        // Check if we haven't already navigated (avoid duplicate navigation)
-        const hasMarketplaceNavigation = session.messages.some(msg => 
-          msg.role === 'system' && msg.content.includes('marketplace')
-        );
-
-        if (!hasMarketplaceNavigation) {
-          this.io.to(sessionId).emit('navigate-to-marketplace', {
-            message: 'Taking you to the marketplace to find components...',
-            searchQuery: searchQuery
-          });
-          
-          console.log(`🛒 Session ${sessionId} navigating to marketplace with component details: "${searchQuery}"`);
-          return;
-        }
+        console.log(`🔍 Component details detected for session ${sessionId}, context ready for Room navigation`);
+        // Context will be used when user manually clicks "Enter Room" button
       }
     }
 
