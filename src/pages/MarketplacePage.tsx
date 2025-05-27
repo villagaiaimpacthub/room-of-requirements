@@ -61,6 +61,11 @@ const MarketplacePage: React.FC<MarketplacePageProps> = ({
   const [chatBasedSearch, setChatBasedSearch] = useState('');
   const [showChatSearch, setShowChatSearch] = useState(false);
 
+  // Set document title
+  useEffect(() => {
+    document.title = 'Component Marketplace - Room of Requirements';
+  }, []);
+
   // Initialize marketplace items
   useEffect(() => {
     const sampleItems: MarketplaceItem[] = [

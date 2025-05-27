@@ -22,6 +22,11 @@ function AppContent() {
   const [currentView, setCurrentView] = useState<'chat' | 'dashboard' | 'compost' | 'admin'>('chat');
   const [conversationMessages, setConversationMessages] = useState<Message[]>([]);
 
+  // Set document title
+  React.useEffect(() => {
+    document.title = 'Room of Requirements';
+  }, []);
+
   // Check if we should show admin dashboard based on URL
   React.useEffect(() => {
     if (location.pathname === '/admin' && process.env.NODE_ENV === 'development') {

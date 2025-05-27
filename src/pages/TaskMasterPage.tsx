@@ -105,6 +105,11 @@ const TaskMasterPage: React.FC = () => {
     }
   ];
 
+  // Set document title
+  useEffect(() => {
+    document.title = 'TaskMaster AI - Room of Requirements';
+  }, []);
+
   // Initialize data
   useEffect(() => {
     const initializeData = async () => {
