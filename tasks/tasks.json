@@ -213,6 +213,22 @@
       ],
       "status": "pending",
       "subtasks": []
+    },
+    {
+      "id": 16,
+      "title": "MCP Search Intelligence Endpoint Implementation",
+      "description": "Create a new MCP server endpoint that analyzes chat history to extract and optimize search terms for marketplace filtering using AI-powered context analysis.",
+      "details": "Implementation steps:\n\n1. Create new Express.js endpoint `/api/marketplace/search-intelligence`:\n   - Accept POST requests with chat history payload\n   - Implement request validation and sanitization\n   - Add rate limiting protection\n\n2. Develop chat analysis pipeline:\n   - Integrate with existing chat history storage\n   - Implement conversation context extraction\n   - Create technical keyword identification system\n   - Build filtering system for removing noise words\n   \n3. AI Processing Implementation:\n   - Utilize MCP's language processing capabilities\n   - Create prompt engineering for search term extraction\n   - Implement keyword relevance scoring\n   - Add domain-specific technical term recognition\n   \n4. Search Optimization Logic:\n   - Develop weighted scoring for technical terms\n   - Implement context-based term prioritization\n   - Create search string optimization algorithm\n   - Add caching for frequently requested analyses\n\n5. Integration Requirements:\n   - Update marketplace frontend to use new endpoint\n   - Implement error handling and fallback to client-side\n   - Add monitoring and analytics\n   - Create rate limiting and usage tracking\n\nTechnical Considerations:\n- Use Redis for caching frequent searches\n- Implement proper error handling for AI service failures\n- Consider batch processing for performance\n- Add logging for search intelligence quality metrics\n- Implement A/B testing capability to compare with client-side\n\nLibraries and Tools:\n- Express.js for endpoint creation\n- Redis for caching\n- Winston for logging\n- Jest for testing\n- OpenAI API for additional processing if needed",
+      "testStrategy": "1. Unit Testing:\n   - Test keyword extraction logic\n   - Verify noise word filtering\n   - Test search string optimization\n   - Validate caching mechanism\n   - Check error handling\n\n2. Integration Testing:\n   - Test endpoint with various chat history formats\n   - Verify proper integration with MCP\n   - Test rate limiting functionality\n   - Validate caching behavior\n   - Check error responses\n\n3. Performance Testing:\n   - Measure response times under load\n   - Test concurrent request handling\n   - Verify cache hit rates\n   - Monitor memory usage\n   - Test with large chat histories\n\n4. Quality Metrics:\n   - Compare search result relevance vs client-side\n   - Measure false positive/negative rates\n   - Track search success rates\n   - Monitor user interaction with results\n   - Validate technical term accuracy\n\n5. Security Testing:\n   - Test input sanitization\n   - Verify rate limiting\n   - Check authentication handling\n   - Test for common vulnerabilities\n   - Validate data privacy compliance",
+      "status": "pending",
+      "dependencies": [
+        4,
+        7,
+        10,
+        14
+      ],
+      "priority": "high",
+      "subtasks": []
     }
   ]
 }
